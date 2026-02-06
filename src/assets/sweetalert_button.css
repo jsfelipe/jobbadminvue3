@@ -1,0 +1,12 @@
+/* Estilo para o botão de confirmação (verde) */
+.swal2-confirm {
+    @apply bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded mr-2; /* Usando Tailwind CSS */
+    border: none;
+  }
+  
+  /* Estilo para o botão de cancelamento (vermelho) */
+ .swal2-cancel {
+    @apply bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded; /* Usando Tailwind CSS */
+    border: none;
+ }
+  

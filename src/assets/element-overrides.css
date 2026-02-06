@@ -1,0 +1,77 @@
+/* Overrides do Element Plus: carregar DEPOIS de element-plus/dist/index.css
+   Remove a borda/anel azul de foco nos inputs em todo o sistema. */
+
+:root {
+  --el-input-focus-border-color: #c0c4cc;
+  --el-input-focus-color: #c0c4cc;
+}
+
+.el-input__wrapper,
+.el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--el-input-border-color, #dcdfe6) inset !important;
+  transition: box-shadow 0.2s ease !important;
+}
+
+.el-input__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--el-input-hover-border-color, #c0c4cc) inset !important;
+}
+
+/* Foco: mesma borda do hover (sem azul, sem anel extra) */
+.el-input__wrapper.is-focus,
+.el-input__wrapper:focus-within,
+.el-input.is-focus .el-input__wrapper,
+.el-textarea__inner:focus,
+.el-textarea__inner:focus-within,
+.el-select .el-input.is-focus .el-input__wrapper,
+.el-select .el-input .el-input__wrapper:focus-within,
+.el-date-editor.el-input.is-focus .el-input__wrapper,
+.el-date-editor .el-input__wrapper:focus-within {
+  box-shadow: 0 0 0 1px var(--el-input-hover-border-color, #c0c4cc) inset !important;
+  outline: none !important;
+}
+
+.el-input__wrapper input,
+.el-input__inner {
+  outline: none !important;
+}
+.el-input__wrapper input:focus,
+.el-input__inner:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.el-input.is-disabled .el-input__wrapper,
+.el-textarea.is-disabled .el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--el-input-border-color, #e4e7ed) inset !important;
+}
+
+.dark .el-input__wrapper.is-focus,
+.dark .el-input__wrapper:focus-within,
+.dark .el-textarea__inner:focus,
+.dark .el-select .el-input.is-focus .el-input__wrapper,
+.dark .el-date-editor.el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px rgb(148 163 184 / 0.4) inset !important;
+}
+
+/* Formulários de pesquisa: inputs e selects com fundo cinza claro */
+.form-pesquisa .el-input__wrapper,
+.form-pesquisa .el-textarea__inner,
+.form-pesquisa .el-select .el-select__wrapper {
+  background-color: #F2F4F7 !important;
+}
+.form-pesquisa .el-input__wrapper:hover,
+.form-pesquisa .el-textarea__inner:hover,
+.form-pesquisa .el-select .el-select__wrapper:hover {
+  background-color: #E4E7EC !important;
+}
+.dark .form-pesquisa .el-input__wrapper,
+.dark .form-pesquisa .el-textarea__inner,
+.dark .form-pesquisa .el-select .el-select__wrapper {
+  background-color: rgb(255 255 255 / 0.06) !important;
+}
+.dark .form-pesquisa .el-input__wrapper:hover,
+.dark .form-pesquisa .el-textarea__inner:hover,
+.dark .form-pesquisa .el-select .el-select__wrapper:hover {
+  background-color: rgb(255 255 255 / 0.08) !important;
+}

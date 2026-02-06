@@ -1,0 +1,83 @@
+/**
+ * Tabelas compactas reutilizáveis (el-table).
+ * Use a classe .jobb-data-table no container da tabela para aplicar.
+ * Objetivo: mais informações na tela, menos quebras desnecessárias, linhas alternadas.
+ */
+
+.jobb-data-table .el-table {
+  --el-table-row-hover-bg-color: var(--el-fill-color-light);
+}
+
+/* Células: fonte menor, compactas, texto nítido */
+.jobb-data-table .el-table .el-table__header th,
+.jobb-data-table .el-table .el-table__body td,
+.jobb-data-table .el-table .el-table__body th {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+  line-height: 1.25;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  padding: 4px 6px;
+}
+
+.jobb-data-table .el-table .el-table__header th {
+  font-size: 0.75rem; /* 12px */
+  font-weight: 600;
+  padding: 5px 6px;
+  color: var(--el-text-color-primary);
+  background-color: var(--el-fill-color-light);
+}
+
+/* Coluna ID: uma linha, sem quebra; largura suficiente para 5–6 dígitos */
+.jobb-data-table .el-table .el-table__body td.jobb-col-id .cell,
+.jobb-data-table .el-table .el-table__header th.jobb-col-id .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Coluna UF: evita quebra vertical (U…/F ou P/E); sempre uma linha */
+.jobb-data-table .el-table .el-table__body td.jobb-col-uf .cell,
+.jobb-data-table .el-table .el-table__header th.jobb-col-uf .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* Colunas de texto longo (nome, email): uma linha, ellipsis se faltar espaço */
+.jobb-data-table .el-table .el-table__body td.jobb-col-text .cell,
+.jobb-data-table .el-table .el-table__header th.jobb-col-text .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Linhas alternadas: contraste claro para leitura (zebrado visível) */
+.jobb-data-table .el-table.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: #f5f6f7 !important;
+}
+
+.jobb-data-table .el-table .el-table__body tbody tr:nth-child(even) td {
+  background-color: #f5f6f7 !important;
+}
+
+.jobb-data-table .el-table.el-table--striped .el-table__body tbody tr:nth-child(even) td {
+  background-color: #f5f6f7 !important;
+}
+
+/* Fallback: el-table pode usar div em vez de tbody */
+.jobb-data-table .el-table .el-table__body tr:nth-child(even) td {
+  background-color: #f5f6f7 !important;
+}
+
+.jobb-data-table .el-table .el-table__body tr:hover > td {
+  background-color: var(--el-fill-color-light) !important;
+}
+
+/* Dark: zebrado suave */
+.dark .jobb-data-table .el-table .el-table__body tbody tr:nth-child(even) td,
+.dark .jobb-data-table .el-table.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}

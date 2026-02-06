@@ -1,0 +1,8 @@
+.modal-lg-80 {
+    max-width: 80% !important;
+}
+
+.body-class-modal-pessoa {
+    max-height: 90vh;
+    overflow: scroll;
+}

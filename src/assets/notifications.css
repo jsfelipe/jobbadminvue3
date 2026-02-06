@@ -1,0 +1,45 @@
+.custom-notification {
+    color: #fff !important; /* Texto branco */
+    font-weight: normal !important; /* Remove o negrito */
+    border-radius: 8px;
+    border: none !important; /* Remove bordas padrão */
+  }
+  
+  /* Fundo verde para Success */
+  .custom-notification.success {
+    background-color: #28a745 !important;
+    border: 2px solid #28a745 !important;
+  }
+  
+  /* Fundo amarelo para Warning */
+  .custom-notification.warning {
+    background-color: #ffc107 !important;
+    color: #000 !important; /* Mantendo o texto preto para contraste */
+    border: 2px solid #ffc107 !important;
+  }
+  
+  /* Fundo vermelho para Error */
+  .custom-notification.error {
+    background-color: #dc3545 !important;
+    border: 2px solid #dc3545 !important;
+  }
+  
+  /* Fundo azul para Info */
+  .custom-notification.info {
+    background-color: #17a2b8 !important;
+    border: 2px solid #17a2b8 !important;
+  }
+  
+  /* Ícone, título, botão de fechar e texto branco */
+  .custom-notification .el-notification__icon,
+  .custom-notification .el-notification__title,
+  .custom-notification .el-notification__content,
+  .custom-notification .el-notification__closeBtn {
+    color: #fff !important;
+  }
+  
+  /* Remove o negrito do título */
+  .custom-notification .el-notification__title {
+    font-weight: normal !important;
+  }
+  
