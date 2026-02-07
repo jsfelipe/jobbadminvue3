@@ -9,6 +9,7 @@ const proxyTarget = process.env.VITE_PROXY_TARGET ?? 'http://localhost:8000'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [vue(), vueJsx()],
   resolve: {
     alias: {

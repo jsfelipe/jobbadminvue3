@@ -24,6 +24,15 @@ Esse aviso aparece quando o Amplify não consegue carregar **secrets** do SSM (P
 - Use **Environment variables** no Amplify para `VITE_API`, `VITE_APP_HOST`, etc.
 - Se usar **Secrets** (SSM), confira o caminho e as permissões do serviço no CodeBuild.
 
+## Redirect SPA (tela em branco ao acessar rotas)
+
+Se a tela fica em branco ao abrir o app ou ao atualizar a página em produção, o Amplify precisa servir `index.html` para todas as rotas (rewrite 200).
+
+- Foi adicionado o arquivo **`redirects.json`** na raiz do projeto. Se o seu Amplify estiver configurado para usar redirects do repositório, ele usará essa regra.
+- **Se ainda ficar em branco**, configure manualmente no **Amplify Console**:
+  - **Hosting** → **Redirects and rewrites** → **Manage redirects**
+  - Adicione: **Original address** `/\<\<\*\>\>` → **Target** `/index.html` → **Type** **Rewrite (200)**
+
 ## Depois de alterar variáveis
 
 Fazer um **novo build** (Re-run build ou novo deploy) para que os valores sejam aplicados ao bundle.
