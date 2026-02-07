@@ -50,7 +50,7 @@
                 />
               </el-select>
             </div>
-            <div v-if="usuarios.length > 1">
+            <div v-if="isPerfil1 && usuarios.length > 1">
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Usuário
               </label>
@@ -123,10 +123,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useStore } from 'vuex'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { extratoService } from '@/services/extrato'
 import { usuarioService } from '@/services/usuario'
 import { ElMessage } from 'element-plus'
+
+const store = useStore()
+const isPerfil1 = computed(() => {
+  const d = store.state.Login?.data || {}
+  const p = d.id_perfil ?? d.id_usuario_tipo
+  return Number(p) === 1
+})
+const currentUserId = computed(() => store.state.Login?.data?.id_usuarios ?? '')
 
 const loading = ref(false)
 const tableData = ref([])
@@ -206,11 +215,12 @@ const carregarUsuarios = async () => {
 const filtrarPesquisa = async () => {
   loading.value = true
   try {
+    const usuarioParam = isPerfil1.value ? usuario_selected.value : currentUserId.value
     const resposta = await extratoService.filtrar(
       period_from.value,
       period_to.value,
       tipo_pgto.value,
-      usuario_selected.value
+      usuarioParam
     )
     tableData.value = resposta.data || []
   } catch (error) {

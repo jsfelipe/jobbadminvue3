@@ -396,13 +396,16 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { clienteService } from '@/services/cliente'
 import { usuarioService } from '@/services/usuario'
 import { ElMessage } from 'element-plus'
+import { podeAcessarCliente } from '@/composables/useClienteAcesso'
 
 const route = useRoute()
 const router = useRouter()
+const store = useStore()
 
 const loading = ref(false)
 const data = ref({})
@@ -473,11 +476,18 @@ const updateCliente = async () => {
 const listar = async () => {
   try {
     const resposta = await clienteService.listarId(id.value)
-    data.value = resposta.data || {}
+    const clientData = resposta.data || {}
+    const userData = store.state.Login?.data || {}
+    if (!podeAcessarCliente(userData, clientData)) {
+      router.replace('/admin/clientes')
+      return
+    }
+    data.value = clientData
     usuario.value = data.value.id_usuario_responsavel || ''
   } catch (error) {
     console.error('Erro ao carregar cliente:', error)
     ElMessage.error('Erro ao carregar dados do cliente')
+    router.replace('/admin/clientes')
   }
 }
 

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import store from '@/store/index.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -135,6 +136,7 @@ const router = createRouter({
       component: () => import('../views/Usuario/Listar.vue'),
       meta: {
         title: 'Usuários',
+        requiresProfile: 1,
       },
     },
     {
@@ -143,6 +145,7 @@ const router = createRouter({
       component: () => import('../views/Usuario/Alterar.vue'),
       meta: {
         title: 'Alterar Usuário',
+        requiresProfile: 1,
       },
     },
     {
@@ -169,5 +172,15 @@ export default router
 router.beforeEach((to, from, next) => {
   const title = (to.meta.title as string) ?? 'Sistema Jobb- Admin'
   document.title = title ? `${title} | Sistema Jobb- Admin` : 'Sistema Jobb- Admin'
+
+  const requiredProfile = to.meta.requiresProfile as number | undefined
+  if (requiredProfile != null) {
+    const userData = store.state.Login?.data || {}
+    const userProfile = userData.id_perfil ?? userData.id_usuario_tipo ?? null
+    if (userProfile !== requiredProfile) {
+      next({ path: '/admin/overview' })
+      return
+    }
+  }
   next()
 })

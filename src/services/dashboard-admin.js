@@ -1,53 +1,84 @@
 import { api } from '@/services/http'
 
+const CACHE_PREFIX = 'dashboard_cache_'
+const TTL_MS = 60 * 60 * 1000 // 1 hora
+
+function getCached(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    if (Date.now() - ts > TTL_MS) return null
+    return data
+  } catch {
+    return null
+  }
+}
+
+function setCached(key, data) {
+  try {
+    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ data, ts: Date.now() }))
+  } catch (_) {}
+}
+
+function withCache(key, request) {
+  return request().then((res) => {
+    setCached(key, res.data)
+    return res
+  })
+}
+
+function cachedGet(key, url) {
+  const cached = getCached(key)
+  if (cached !== null) return Promise.resolve({ data: cached })
+  return withCache(key, () => api.get(url))
+}
+
 /**
- * Serviços de dashboard para API jobbadmin (porta 8001)
+ * Serviços de dashboard para API jobbadmin (porta 8001).
+ * Respostas em cache por 1 hora (localStorage).
  */
-
 export const dashboardAdmin = {
-  qtdclientes: () => {
-    return api.get('/dashboard/qtdclientes')
-  },
+  qtdclientes: () => cachedGet('qtdclientes', '/dashboard/qtdclientes'),
 
-  qtdClientesAtivos: () => {
-    return api.get('/dashboard/qtdclientesativos')
-  },
+  qtdClientesAtivos: () => cachedGet('qtdClientesAtivos', '/dashboard/qtdclientesativos'),
 
-  qtdLeadsMesAtual: () => {
-    return api.get('/dashboard/qtdleadsmesatual')
-  },
+  qtdLeadsMesAtual: () => cachedGet('qtdLeadsMesAtual', '/dashboard/qtdleadsmesatual'),
 
-  graficoLeadsPorMes: () => {
-    return api.get('/dashboard/graficoleadspormes')
-  },
+  graficoLeadsPorMes: () => cachedGet('graficoLeadsPorMes', '/dashboard/graficoleadspormes'),
 
-  amountVendasMes: () => {
-    return api.get('/dashboard/vendasmes')
-  },
+  amountVendasMes: () => cachedGet('amountVendasMes', '/dashboard/vendasmes'),
 
-  graficoVendasMes: () => {
-    return api.get('/dashboard/graficoanual')
-  },
+  graficoVendasMes: () => cachedGet('graficoVendasMes', '/dashboard/graficoanual'),
 
-  setupAnual: () => {
-    return api.get('/dashboard/setupanual')
-  },
+  setupAnual: () => cachedGet('setupAnual', '/dashboard/setupanual'),
 
-  primeirasTransacoesAnual: () => {
-    return api.get('/dashboard/primeiras-transacoes-anual')
-  },
+  primeirasTransacoesAnual: () => cachedGet('primeirasTransacoesAnual', '/dashboard/primeiras-transacoes-anual'),
 
-  primeirasTransacoesMesAtual: () => {
-    return api.get('/dashboard/primeiras-transacoes-mes-atual')
-  },
+  primeirasTransacoesMesAtual: () =>
+    cachedGet('primeirasTransacoesMesAtual', '/dashboard/primeiras-transacoes-mes-atual'),
 
-  clientesSemUso: () => {
-    return api.get('/dashboard/clientes-sem-uso')
-  },
+  clientesSemUso: () => cachedGet('clientesSemUso', '/dashboard/clientes-sem-uso'),
 
-  ticketMedio: () => api.get('/dashboard/ticket-medio'),
-  churn: () => api.get('/dashboard/churn'),
-  crescimentoBase: () => api.get('/dashboard/crescimento-base'),
-  topClientesAcesso: () => api.get('/dashboard/top-clientes-acesso'),
-  clientesRiscoAbandono: () => api.get('/dashboard/clientes-risco-abandono')
+  ticketMedio: () => cachedGet('ticketMedio', '/dashboard/ticket-medio'),
+
+  churn: () => cachedGet('churn', '/dashboard/churn'),
+
+  crescimentoBase: () => cachedGet('crescimentoBase', '/dashboard/crescimento-base'),
+
+  topClientesAcesso: () => cachedGet('topClientesAcesso', '/dashboard/top-clientes-acesso'),
+
+  clientesRiscoAbandono: () => cachedGet('clientesRiscoAbandono', '/dashboard/clientes-risco-abandono')
+}
+
+/** Remove todo o cache do dashboard (para forçar nova carga da API). */
+export function clearDashboardCache() {
+  try {
+    const keys = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(CACHE_PREFIX)) keys.push(k)
+    }
+    keys.forEach((k) => localStorage.removeItem(k))
+  } catch (_) {}
 }

@@ -64,50 +64,51 @@
           </div>
         </div>
 
-        <!-- Leads por Mês -->
-        <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-          <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Leads por Mês
-          </h4>
-          <div class="h-[400px] w-full">
-            <VueApexCharts
-              v-if="!loadingLeads && leadsData.length > 0"
-              type="area"
-              height="400"
-              :options="chartOptionsLeads"
-              :series="chartSeriesLeads"
-            />
-            <div
-              v-else
-              class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
-            >
-              Carregando...
+        <!-- Leads por Mês e Vendas por mês lado a lado -->
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Leads por Mês
+            </h4>
+            <div class="h-[400px] w-full">
+              <VueApexCharts
+                v-if="!loadingLeads && leadsData.length > 0"
+                type="area"
+                height="400"
+                :options="chartOptionsLeads"
+                :series="chartSeriesLeads"
+              />
+              <div
+                v-else
+                class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
+              >
+                Carregando...
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Vendas por mês (primeiras transações por cliente) - perfil 1: todos; perfil ≠ 1: só clientes dos quais é responsável -->
-        <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-          <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Vendas por mês (Setup + primeira mensalidade)
-          </h4>
-          <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Soma por mês das primeiras transações de cada cliente (setup + primeira mensalidade no mesmo mês).
-            <span v-if="!isPerfil1" class="block mt-1 font-medium">Apenas clientes dos quais você é responsável.</span>
-          </p>
-          <div class="h-[400px] w-full">
-            <VueApexCharts
-              v-if="!loadingPrimeiras && primeirasData.length > 0"
-              type="area"
-              height="400"
-              :options="chartOptionsPrimeiras"
-              :series="chartSeriesPrimeiras"
-            />
-            <div
-              v-else
-              class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
-            >
-              Carregando...
+          <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Vendas por mês (Setup + primeira mensalidade)
+            </h4>
+            <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
+              
+              <span v-if="!isPerfil1" class="block mt-1 font-medium"></span>
+            </p>
+            <div class="h-[400px] w-full">
+              <VueApexCharts
+                v-if="!loadingPrimeiras && primeirasData.length > 0"
+                type="area"
+                height="400"
+                :options="chartOptionsPrimeiras"
+                :series="chartSeriesPrimeiras"
+              />
+              <div
+                v-else
+                class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
+              >
+                Carregando...
+              </div>
             </div>
           </div>
         </div>
@@ -275,11 +276,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import VueApexCharts from 'vue3-apexcharts'
-import { dashboardAdmin } from '@/services/dashboard-admin'
+import { dashboardAdmin, clearDashboardCache } from '@/services/dashboard-admin'
+import { ElMessage } from 'element-plus'
 
 const store = useStore()
 const isPerfil1 = computed(() => {
@@ -300,6 +302,7 @@ const loading = ref(true)
 const loadingLeads = ref(true)
 const loadingsetup = ref(true)
 const loadingPrimeiras = ref(true)
+const refreshing = ref(false)
 
 const statsCards = ref([
   {
@@ -654,18 +657,24 @@ const dadosPrimeirasTransacoes = async () => {
   }
 }
 
-onMounted(async () => {
-  // Após redirect (window.location.href) o store perde state.data; recarrega usuário para isPerfil1 funcionar
+async function carregarDashboard() {
   if (store.state.Login?.token && !store.state.Login?.data) {
     try {
       await store.dispatch('Login/me')
     } catch (_) {}
   }
 
-  // Carrega os gráficos em paralelo. Valor Mensal só para perfil 1; pode falhar no backend, não bloqueia os outros
+  loading.value = true
+  loadingLeads.value = true
+  loadingsetup.value = true
+  loadingPrimeiras.value = true
+  loadingSemUso.value = true
+  loadingTopAcesso.value = true
+  loadingRisco.value = true
+
   const promises = [graficoLeadsPorMes(), dadosSetup(), dadosPrimeirasTransacoes()]
   if (isPerfil1.value) promises.unshift(graficoVendasAnual())
-  Promise.allSettled(promises)
+  await Promise.allSettled(promises)
 
   try {
     const res = await dashboardAdmin.clientesSemUso()
@@ -748,9 +757,7 @@ onMounted(async () => {
       const vendasRes = await dashboardAdmin.amountVendasMes()
       const result = vendasRes.data?.data || vendasRes.data || []
       if (Array.isArray(result)) {
-        const totalMes = result.reduce((soma, item) => {
-          return soma + parseFloat(item.amount || 0)
-        }, 0)
+        const totalMes = result.reduce((soma, item) => soma + parseFloat(item.amount || 0), 0)
         statsCards.value[2].value = 'R$ ' + totalMes.toFixed(2).replace('.', ',')
       } else {
         statsCards.value[2].value = 'R$ 0,00'
@@ -777,6 +784,29 @@ onMounted(async () => {
     console.error('Erro ao carregar vendas mês atual (primeiras):', error)
     statsCards.value[4].value = 'R$ 0,00'
   }
+}
+
+async function limparCacheERecarregar() {
+  refreshing.value = true
+  clearDashboardCache()
+  try {
+    await carregarDashboard()
+    ElMessage.success('Cache limpo e dados atualizados')
+  } finally {
+    refreshing.value = false
+  }
+}
+
+function onDashboardRefresh() {
+  limparCacheERecarregar()
+}
+
+onMounted(() => {
+  carregarDashboard()
+  window.addEventListener('dashboard-refresh', onDashboardRefresh)
+})
+onUnmounted(() => {
+  window.removeEventListener('dashboard-refresh', onDashboardRefresh)
 })
 </script>
 
