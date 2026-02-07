@@ -6,6 +6,10 @@ const router = createRouter({
     return savedPosition || { left: 0, top: 0 }
   },
   routes: [
+    {
+      path: '/',
+      redirect: '/signin',
+    },
     // Rotas de autenticação
     {
       path: '/signin',
