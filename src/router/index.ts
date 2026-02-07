@@ -163,7 +163,7 @@ const router = createRouter({
 export default router
 
 router.beforeEach((to, from, next) => {
-  const title = (to.meta.title as string) ?? 'Sistema Jobb 4.0'
-  document.title = title ? `${title} | Sistema Jobb 4.0` : 'Sistema Jobb 4.0'
+  const title = (to.meta.title as string) ?? 'Sistema Jobb- Admin'
+  document.title = title ? `${title} | Sistema Jobb- Admin` : 'Sistema Jobb- Admin'
   next()
 })
