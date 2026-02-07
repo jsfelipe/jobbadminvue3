@@ -26,12 +26,17 @@ Esse aviso aparece quando o Amplify não consegue carregar **secrets** do SSM (P
 
 ## Redirect SPA (tela em branco ao acessar rotas)
 
-Se a tela fica em branco ao abrir o app ou ao atualizar a página em produção, o Amplify precisa servir `index.html` para todas as rotas (rewrite 200).
+Use **apenas** a regra **404 (Rewrite)** — assim o Amplify só reescreve quando o arquivo **não existe** (ex.: `/dashboard`). Arquivos que existem (ex.: `/assets/index-xxx.js`) são servidos normalmente.
 
-- Foi adicionado o arquivo **`redirects.json`** na raiz do projeto. Se o seu Amplify estiver configurado para usar redirects do repositório, ele usará essa regra.
-- **Se ainda ficar em branco**, configure manualmente no **Amplify Console**:
-  - **Hosting** → **Redirects and rewrites** → **Manage redirects**
-  - Adicione: **Original address** `/\<\<\*\>\>` → **Target** `/index.html` → **Type** **Rewrite (200)**
+**No Amplify Console** → **Hosting** → **Redirects and rewrites** → **Manage redirects**:
+
+1. **Remova todas as regras** (incluindo a de 200 com regex).
+2. **Adicione só esta:**
+   - **Source:** `/<*>`
+   - **Target:** `/index.html`
+   - **Type:** **404 (Rewrite)**
+
+Assim: pedido a `/assets/xxx.js` → arquivo existe → retorna o JS. Pedido a `/signin` → não existe → 404 → reescreve para `index.html`.
 
 ## Depois de alterar variáveis
 
