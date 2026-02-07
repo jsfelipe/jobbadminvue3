@@ -83,7 +83,11 @@ const createInstance = (baseURL) => {
 }
 
 // Cria instância da API principal
-const api = createInstance(import.meta.env.VITE_API || 'http://localhost:8001/api')
+// Em produção sem VITE_API: usa /api (mesma origem), para evitar tela branca quando env não está no build (ex.: Amplify)
+const apiBaseUrl =
+  import.meta.env.VITE_API ||
+  (import.meta.env.PROD ? `${window.location.origin}/api` : 'http://localhost:8001/api')
+const api = createInstance(apiBaseUrl)
 
 // apiV2 aponta para a mesma instância da API principal (não usa mais API V2)
 const apiV2 = api
