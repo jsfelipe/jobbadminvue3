@@ -5,6 +5,13 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  #app {
+    height: 100%;
+  }
   body {
     @apply relative text-base font-normal z-1 bg-gray-50 font-outfit;
   }

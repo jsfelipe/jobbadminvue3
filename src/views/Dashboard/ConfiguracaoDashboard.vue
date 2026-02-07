@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="flex h-full w-full flex-col space-y-6 px-4 sm:px-6 lg:px-8">
       <!-- Cabeçalho: voltar, título e perfil (admin) -->
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">

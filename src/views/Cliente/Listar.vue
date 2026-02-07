@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+    <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
         <!-- Filtros -->
         <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -242,7 +242,7 @@
             :total="total"
           />
           <div class="text-right">
-            <strong>Total:</strong> {{ total }}
+            <strong>Total:</strong> {{ formatCurrency(total) }}
           </div>
         </div>
       </div>
@@ -259,7 +259,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ModalWzap from './ModalWzap.vue'
 import { clienteService } from '@/services/cliente'
 import { ElMessage } from 'element-plus'
-import numbro from 'numbro'
+import { formatValorBR } from '@/utils/moedaBR'
 
 const router = useRouter()
 
@@ -297,8 +297,9 @@ const formatDate = (date) => {
 }
 
 const formatCurrency = (value) => {
-  if (!value) return 'R$ 0,00'
-  return numbro(value).format({ thousandSeparator: '.', decimalSeparator: ',', prefix: 'R$ ' })
+  if (value == null || value === '') return 'R$ 0,00'
+  const formatted = formatValorBR(value)
+  return formatted ? `R$ ${formatted}` : 'R$ 0,00'
 }
 
 const handleEdit = (index, row) => {

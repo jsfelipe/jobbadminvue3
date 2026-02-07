@@ -134,7 +134,7 @@ const defaultMenuItems: MenuItemWithIcon[] = [
   { icon: SettingsIcon, name: 'Desbloqueio', path: '/admin/desbloqueio' },
   { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato' },
   { icon: SettingsIcon, name: 'Alterar Databases', path: '/admin/query-database', requiresProfile: 1 },
-  { icon: UserCircleIcon, name: 'Usuário', path: '/admin/usuarios' },
+  { icon: UserCircleIcon, name: 'Usuário', path: '/admin/usuarios', requiresProfile: 1 },
 ]
 
 const defaultMenuGroups: MenuGroup[] = [

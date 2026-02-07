@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+    <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
         <h4 class="mb-6 text-xl font-semibold text-gray-900 dark:text-white">Alterar Usuário</h4>
 

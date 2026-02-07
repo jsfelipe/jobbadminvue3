@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+    <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <!-- Botões de ação -->
       <div class="mb-4 flex items-center gap-4">
         <router-link :to="{ name: 'admin.clientes' }">
