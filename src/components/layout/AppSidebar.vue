@@ -227,26 +227,7 @@
       </nav>
       <!-- Suporte Online e Sair (após MEU PLANO) -->
       <ul class="mt-4 flex flex-col gap-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-        <li>
-          <a
-            :href="suporteOnlineUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="[
-              'menu-item group w-full',
-              'menu-item-inactive',
-              !isExpanded && !isHovered ? 'lg:justify-center' : 'lg:justify-start',
-            ]"
-          >
-            <span class="menu-item-icon-inactive">
-              <ChatIcon class="h-5 w-5" />
-            </span>
-            <span
-              v-if="isExpanded || isHovered || isMobileOpen"
-              class="menu-item-text"
-            >Suporte Online</span>
-          </a>
-        </li>
+        
         <li>
           <button
             type="button"
@@ -273,7 +254,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import {
   ChevronDownIcon,
@@ -286,6 +267,7 @@ import { useMenuSidebar } from "@/composables/useMenuSidebar";
 import { useStore } from "vuex";
 
 const route = useRoute();
+const router = useRouter();
 const store = useStore();
 
 const { isExpanded, isMobileOpen, isHovered, openSubmenu, toggleMobileSidebar } = useSidebar();
@@ -302,6 +284,7 @@ const suporteOnlineUrl = computed(() => {
 
 function logout() {
   store.dispatch("Login/doLogout");
+  router.push("/signin");
 }
 
 const isActive = (path) => route.path === path;

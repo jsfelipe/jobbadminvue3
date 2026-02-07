@@ -67,9 +67,12 @@ const createInstance = (baseURL) => {
       }
 
       if (status === 401) {
-        localStorage.removeItem('auth-jobb')
-        delete api.defaults.headers.common['Authorization']
-        window.location.href = '/signin'
+        const isLoginRequest = config.url && String(config.url).includes('/auth/login')
+        if (!isLoginRequest) {
+          localStorage.removeItem('auth-jobb')
+          delete api.defaults.headers.common['Authorization']
+          window.location.href = '/signin'
+        }
       }
 
       return Promise.reject(error)

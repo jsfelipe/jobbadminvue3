@@ -142,6 +142,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/query-database',
+      name: 'admin.query-database',
+      component: () => import('../views/QueryDatabase/QueryDatabase.vue'),
+      meta: {
+        title: 'Alterar Databases',
+      },
+    },
+    {
       path: '/meu-perfil',
       name: 'MeuPerfil',
       component: () => import('../views/Others/Meu-perfil.vue'),

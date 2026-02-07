@@ -51,7 +51,9 @@
 import { UserCircleIcon, ChevronDownIcon, LogoutIcon } from '@/icons'
 import { RouterLink } from 'vue-router'
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useStore } from 'vuex'
 
+const store = useStore()
 const dropdownOpen = ref(false)
 const dropdownRef = ref(null)
 
@@ -68,8 +70,7 @@ const closeDropdown = () => {
 }
 
 const signOut = () => {
-  // Implement sign out logic here
-  console.log('Signing out...')
+  store.dispatch('Login/doLogout')
   closeDropdown()
 }
 

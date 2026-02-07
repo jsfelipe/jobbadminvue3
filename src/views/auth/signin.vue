@@ -3,7 +3,7 @@
     <div class="flex min-h-screen w-full flex-col lg:flex-row">
       <!-- Painel esquerdo: logo + texto (cores do projeto) -->
       <div
-        class="relative flex flex-shrink-0 flex-col justify-between bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 px-6 py-8 text-white lg:w-[45%] lg:min-h-screen lg:px-12 lg:py-12 xl:px-16"
+        class="relative flex flex-shrink-0 flex-col justify-between bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 px-6 py-8 text-white lg:w-[45%] lg:min-h-screen lg:px-12 lg:py-12 xl:px-16"
       >
         <div class="flex flex-col gap-8 lg:gap-12">
           <div class="mt-4 lg:mt-8">
@@ -15,10 +15,10 @@
               height="40"
             />
             <h1 class="mt-8 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl lg:mt-10 lg:text-4xl xl:text-[2.75rem]">
-              Bem-vindo ao Jobb
+              Painel administrativo Jobb
             </h1>
             <p class="mt-4 max-w-md text-base leading-relaxed text-white/90 sm:text-lg lg:mt-6">
-              Gerencie orçamentos, projetos e equipes em um só lugar. Acesse sua conta e continue de onde parou.
+              Acesso restrito à equipe interna. Gerencie clientes, usuários e operações do sistema.
             </p>
           </div>
         </div>
@@ -41,6 +41,14 @@
             </p>
           </div>
 
+          <div
+            v-if="loginError"
+            class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
+            role="alert"
+          >
+            {{ loginError }}
+          </div>
+
           <form @submit.prevent="submitForm" class="space-y-6">
             <div>
               <label
@@ -56,7 +64,7 @@
                   id="email"
                   placeholder="Insira seu e-mail"
                   autocomplete="username"
-                  class="h-14 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-orange-500 dark:focus:ring-orange-500/20"
+                  class="h-14 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-gray-500 dark:focus:ring-gray-500/20"
                   :class="{ 'border-error-500 focus:border-error-500 focus:ring-error-500/20': errorMessage }"
                 />
                 <span v-if="errorMessage" class="mt-1.5 block text-sm text-error-500">
@@ -80,7 +88,7 @@
                     id="password"
                     placeholder="Insira sua senha"
                     autocomplete="current-password"
-                    class="h-14 w-full rounded-xl border border-gray-300 bg-white py-3 pl-4 pr-14 text-base text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-orange-500 dark:focus:ring-orange-500/20"
+                    class="h-14 w-full rounded-xl border border-gray-300 bg-white py-3 pl-4 pr-14 text-base text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-gray-500 dark:focus:ring-gray-500/20"
                     :class="{ 'border-error-500 focus:border-error-500 focus:ring-error-500/20': errorMessage }"
                   />
                   <button
@@ -134,7 +142,7 @@
             <div class="flex justify-end">
               <router-link
                 to="/esqueci-senha"
-                class="text-sm font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300"
+                class="text-sm font-medium text-gray-600 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 Esqueci a senha
               </router-link>
@@ -143,7 +151,7 @@
             <div class="pt-2">
               <button
                 type="submit"
-                class="flex h-14 w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-60 dark:focus:ring-offset-gray-900"
+                class="flex h-14 w-full items-center justify-center rounded-xl bg-gray-500 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-60 dark:focus:ring-offset-gray-900"
                 :disabled="loading"
               >
                 <span v-if="loading">Entrando...</span>
@@ -156,7 +164,7 @@
             Ainda não tem uma conta?
             <router-link
               to="/signup"
-              class="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300"
+              class="font-medium text-gray-600 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300"
             >
               Cadastre-se
             </router-link>
@@ -182,6 +190,7 @@ const { handleSubmit } = useForm()
 
 const loading = ref(false)
 const showPassword = ref(false)
+const loginError = ref('')
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
@@ -189,6 +198,7 @@ const togglePasswordVisibility = () => {
 
 const submitForm = handleSubmit(async (values) => {
   loading.value = true
+  loginError.value = ''
   try {
     await store.dispatch('Login/doLogin', values)
     
@@ -224,16 +234,11 @@ const submitForm = handleSubmit(async (values) => {
   } catch (error: unknown) {
     console.error('Login failed:', error)
 
-    const err = error as { response?: { data?: { msg?: string } } }
-    const msg = err?.response?.data?.msg
-
-    if (msg) {
-      toast.error(msg, { autoClose: 3000 })
-    } else {
-      toast.error('Erro ao realizar login. Tente novamente.', {
-        autoClose: 3000,
-      })
-    }
+    const err = error as { response?: { data?: { msg?: string; message?: string } } }
+    const msg = err?.response?.data?.msg ?? err?.response?.data?.message
+    const errorMsg = msg || 'Erro ao realizar login. Verifique e-mail e senha e tente novamente.'
+    loginError.value = errorMsg
+    toast.error(errorMsg, { autoClose: 15000 })
   } finally {
     loading.value = false
   }

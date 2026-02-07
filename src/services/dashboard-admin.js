@@ -9,6 +9,10 @@ export const dashboardAdmin = {
     return api.get('/dashboard/qtdclientes')
   },
 
+  qtdClientesAtivos: () => {
+    return api.get('/dashboard/qtdclientesativos')
+  },
+
   qtdLeadsMesAtual: () => {
     return api.get('/dashboard/qtdleadsmesatual')
   },
@@ -27,5 +31,23 @@ export const dashboardAdmin = {
 
   setupAnual: () => {
     return api.get('/dashboard/setupanual')
-  }
+  },
+
+  primeirasTransacoesAnual: () => {
+    return api.get('/dashboard/primeiras-transacoes-anual')
+  },
+
+  primeirasTransacoesMesAtual: () => {
+    return api.get('/dashboard/primeiras-transacoes-mes-atual')
+  },
+
+  clientesSemUso: () => {
+    return api.get('/dashboard/clientes-sem-uso')
+  },
+
+  ticketMedio: () => api.get('/dashboard/ticket-medio'),
+  churn: () => api.get('/dashboard/churn'),
+  crescimentoBase: () => api.get('/dashboard/crescimento-base'),
+  topClientesAcesso: () => api.get('/dashboard/top-clientes-acesso'),
+  clientesRiscoAbandono: () => api.get('/dashboard/clientes-risco-abandono')
 }
