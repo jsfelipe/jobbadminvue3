@@ -8,6 +8,17 @@
   </head>
   <body class="dark:bg-gray-900">
     <div id="app"></div>
+    <script>
+      window.__APP_ERROR__ = null;
+      window.onerror = function(msg, url, line, col, err) {
+        window.__APP_ERROR__ = { msg: msg, url: url, line: line, col: col, err: err && err.stack };
+        var el = document.getElementById('app');
+        if (el) {
+          el.innerHTML = '<div style="padding:20px;font-family:monospace;white-space:pre-wrap;background:#fee;color:#c00;">Erro: ' + msg + '\n' + (url || '') + ' ' + line + ':' + col + '\n' + (err && err.stack ? err.stack : '') + '</div>';
+        }
+        return false;
+      };
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
