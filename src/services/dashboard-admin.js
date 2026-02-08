@@ -53,7 +53,7 @@ export const dashboardAdmin = {
 
   amountVendasMes: () => cachedGet('amountVendasMes', '/dashboard/vendasmes'),
 
-  graficoVendasMes: () => cachedGet('graficoVendasMes', '/dashboard/graficoanual'),
+  graficoVendasMes: () => cachedGet('graficoVendasMes_v2', '/dashboard/graficoanual'),
 
   /** Top 20 lançamentos. ?mes=1&ano=2026. Sem cache. */
   topLancamentosFaturamento: (mes, ano) =>
@@ -75,6 +75,8 @@ export const dashboardAdmin = {
   ticketMedio: () => cachedGet('ticketMedio', '/dashboard/ticket-medio'),
 
   churn: () => cachedGet('churn', '/dashboard/churn'),
+
+  inadimplenciaMedia: () => cachedGet('inadimplenciaMedia', '/dashboard/inadimplencia-media'),
 
   crescimentoBase: () => cachedGet('crescimentoBase', '/dashboard/crescimento-base'),
 

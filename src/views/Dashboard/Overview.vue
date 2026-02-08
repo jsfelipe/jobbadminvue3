@@ -50,7 +50,6 @@
           <div class="h-[400px] w-full">
             <VueApexCharts
               v-if="!loading && vendasData.length > 0"
-              type="area"
               height="400"
               :options="chartOptionsVendas"
               :series="chartSeriesVendas"
@@ -84,17 +83,19 @@
                 <thead class="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">#</th>
+                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">ID</th>
                     <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Cliente</th>
                     <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Valor</th>
                     <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Data</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Venc.</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                   <tr v-if="loadingTopLancamentos" class="text-center text-gray-500 dark:text-gray-400">
-                    <td colspan="4" class="px-4 py-6">Carregando...</td>
+                    <td colspan="6" class="px-4 py-6">Carregando...</td>
                   </tr>
                   <tr v-else-if="!topLancamentosFaturamento.length" class="text-center text-gray-500 dark:text-gray-400">
-                    <td colspan="4" class="px-4 py-6">Nenhum lançamento.</td>
+                    <td colspan="6" class="px-4 py-6">Nenhum lançamento.</td>
                   </tr>
                   <tr
                     v-else
@@ -103,9 +104,11 @@
                     class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ idx + 1 }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-right text-sm text-gray-500 dark:text-gray-400">{{ row.cliente_id ?? '—' }}</td>
                     <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
                     <td class="whitespace-nowrap px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300">{{ formatBr(row.valor) }}</td>
                     <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.data) }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.vencimento) || '—' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -569,6 +572,8 @@ const statsCards = ref([
 ])
 
 const vendasData = ref([])
+const vendasTrendData = ref([])
+const vendasInadimplenciaData = ref([]) // inadimplência por mês (vencido no mês, pago com >30 dias atraso)
 const topLancamentosFaturamento = ref([])
 const loadingTopLancamentos = ref(true)
 const lancamentosFaturamentoFiltro = ref('')
@@ -733,12 +738,13 @@ const whatsappUrl = (telefone) => {
 
 const chartOptionsVendas = computed(() => ({
   chart: {
-    type: 'area',
+    type: 'line',
     height: 400,
     toolbar: { show: false },
   },
   dataLabels: { enabled: false },
-  stroke: { curve: 'smooth' },
+  stroke: { show: true, curve: 'smooth', width: [2, 2, 2, 2], dashArray: [0, 6, 0, 6] },
+  markers: { size: 0 },
   xaxis: { categories: meses },
   yaxis: {
     labels: {
@@ -747,6 +753,7 @@ const chartOptionsVendas = computed(() => ({
   },
   fill: {
     type: 'gradient',
+    opacity: [0.85, 0, 0, 0],
     gradient: {
       shadeIntensity: 1,
       opacityFrom: 0.7,
@@ -754,7 +761,7 @@ const chartOptionsVendas = computed(() => ({
       stops: [0, 90, 100],
     },
   },
-  colors: ['#10b981'],
+  colors: ['#10b981', '#f59e0b', '#ef4444', '#ef4444'],
   tooltip: {
     theme: 'dark',
     y: {
@@ -763,12 +770,34 @@ const chartOptionsVendas = computed(() => ({
   },
 }))
 
-const chartSeriesVendas = computed(() => [
-  {
-    name: 'Vendas',
-    data: vendasData.value,
-  },
-])
+const chartSeriesVendas = computed(() => {
+  const inad = [...(vendasInadimplenciaData.value || [])]
+  const mesAtual = new Date().getMonth()
+  const inadReal = inad.map((v, i) => (i <= mesAtual ? v : null))
+  const inadProj = inad.map((v, i) => (i >= mesAtual ? v : null))
+  return [
+    {
+      name: 'Faturamento',
+      type: 'area',
+      data: [...(vendasData.value || [])],
+    },
+    {
+      name: 'Tendência (ano ant. − inad.)',
+      type: 'line',
+      data: [...(vendasTrendData.value || [])],
+    },
+    {
+      name: 'Inadimplência',
+      type: 'line',
+      data: inadReal,
+    },
+    {
+      name: 'Inadimplência (proj.)',
+      type: 'line',
+      data: inadProj,
+    },
+  ]
+})
 
 const chartOptionsLeads = computed(() => ({
   chart: {
@@ -903,26 +932,54 @@ const chartSeriesCrescimento = computed(() => {
 const graficoVendasAnual = async () => {
   try {
     const resposta = await dashboardAdmin.graficoVendasMes()
-    // Tenta diferentes estruturas de resposta
-    // O backend pode retornar diretamente um array ou dentro de data
-    const dados = Array.isArray(resposta.data) 
-      ? resposta.data 
-      : (resposta.data?.data || resposta.data || [])
-    
-    // Garante que seja um array com 12 elementos (um para cada mês)
-    const mesesComDados = Array(12).fill(0)
-    dados.forEach((valor, index) => {
-      if (index < 12) {
-        mesesComDados[index] = parseFloat(valor) || 0
+    const raw = resposta.data?.data ?? resposta.data
+    let valoresAno = Array(12).fill(0)
+    let valoresAnoAnterior = []
+    let inadimplenciaMedia = 0.05
+
+    if (Array.isArray(raw)) {
+      raw.forEach((v, i) => { if (i < 12) valoresAno[i] = parseFloat(v) || 0 })
+    } else if (raw && Array.isArray(raw.valores)) {
+      raw.valores.forEach((v, i) => { if (i < 12) valoresAno[i] = parseFloat(v) || 0 })
+      if (Array.isArray(raw.valoresAnoAnterior)) {
+        const arr = raw.valoresAnoAnterior.map((v) => parseFloat(v) || 0)
+        valoresAnoAnterior = Array(12).fill(0).map((_, i) => arr[i] ?? 0)
       }
-    })
-    
-    vendasData.value = mesesComDados
+      if (typeof raw.inadimplenciaMedia === 'number') inadimplenciaMedia = raw.inadimplenciaMedia
+    }
+
+    let inadimplenciaPorMes = Array(12).fill(0)
+    if (raw && Array.isArray(raw.inadimplenciaPorMes)) {
+      raw.inadimplenciaPorMes.forEach((v, i) => { if (i < 12) inadimplenciaPorMes[i] = parseFloat(v) || 0 })
+    }
+    vendasInadimplenciaData.value = inadimplenciaPorMes
+
+    vendasData.value = valoresAno
+
+    let trend
+    if (raw && Array.isArray(raw.tendenciaPorMes) && raw.tendenciaPorMes.length >= 12) {
+      trend = raw.tendenciaPorMes.map((v) => Math.round(parseFloat(v) * 100) / 100)
+    } else {
+      const temAnoAnterior = valoresAnoAnterior.length >= 12 && valoresAnoAnterior.some((v) => v > 0)
+      if (temAnoAnterior) {
+        trend = Array(12)
+          .fill(0)
+          .map((_, i) => Math.round((valoresAnoAnterior[i] ?? 0) * (1 - inadimplenciaMedia) * 100) / 100)
+      } else {
+        const mesAtual = new Date().getMonth()
+        const inicio = Math.max(0, mesAtual - 5)
+        const base = valoresAno.slice(inicio, mesAtual + 1)
+        const media = base.length ? base.reduce((a, b) => a + b, 0) / base.length : 0
+        const mediaVal = Math.round(media * 100) / 100
+        trend = Array(12).fill(mediaVal)
+      }
+    }
+    vendasTrendData.value = trend
     loading.value = false
   } catch (error) {
-    // Backend tem bug quando não há vendas (Undefined variable: valores)
-    // Trata silenciosamente e inicializa com zeros
     vendasData.value = Array(12).fill(0)
+    vendasTrendData.value = Array(12).fill(0)
+    vendasInadimplenciaData.value = Array(12).fill(0)
     loading.value = false
   }
 }
