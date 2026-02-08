@@ -265,7 +265,6 @@
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
             Clientes com pelo menos 1 acesso nos últimos 2 meses, ao fim de cada mês (ano atual).
-            <span v-if="crescimentoBaseCurrentMonth < 12" class="block mt-1">Meses futuros: projeção com base em novos clientes (primeiro acesso) do mesmo mês do ano passado (tipo C).</span>
           </p>
           <div class="h-[300px] w-full">
             <VueApexCharts
@@ -583,6 +582,7 @@ const primeirasData = ref([])
 const clientesSemUso = ref([])
 const loadingSemUso = ref(true)
 const crescimentoBaseData = ref([])
+const crescimentoBaseDataAnoAnterior = ref([])
 const crescimentoBaseCurrentMonth = ref(12)
 const topClientesAcesso = ref([])
 const loadingTopAcesso = ref(true)
@@ -905,26 +905,39 @@ const chartSeriesPrimeiras = computed(() => [
 const chartOptionsCrescimento = computed(() => ({
   chart: { type: 'area', height: 300, toolbar: { show: false } },
   dataLabels: { enabled: false },
-  stroke: { curve: 'smooth', dashArray: [0, 6] },
+  stroke: { curve: 'smooth', width: 2, dashArray: [0, 6] },
   xaxis: { categories: meses },
   yaxis: {},
   fill: {
     type: 'gradient',
     gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.9, stops: [0, 90, 100] },
   },
-  colors: ['#0ea5e9', '#0ea5e9'],
+  colors: ['#0ea5e9', '#f97316'],
   tooltip: { theme: 'dark' },
   legend: { show: true },
+  plotOptions: {
+    area: {
+      fillTo: 'origin',
+    },
+  },
 }))
 const chartSeriesCrescimento = computed(() => {
   const data = crescimentoBaseData.value
+  const anoAnt = crescimentoBaseDataAnoAnterior.value
   const curIdx = Math.max(0, Math.min(11, (crescimentoBaseCurrentMonth.value || 1) - 1))
   if (data.length !== 12) return [{ name: 'Clientes ativos', data }]
-  if (curIdx >= 11) return [{ name: 'Clientes ativos', data }]
   const real = data.map((v, i) => (i <= curIdx ? v : null))
-  const proj = data.map((v, i) => (i >= curIdx ? v : null))
+  if (curIdx >= 11) return [{ name: 'Clientes ativos', data: real }]
+  const atuais = Number(data[curIdx]) || 0
+  const anoPassadoMesAtual = Number(anoAnt[curIdx]) || 0
+  const proj = data.map((v, i) => {
+    if (i < curIdx) return null
+    if (anoPassadoMesAtual <= 0) return atuais
+    const anoPassadoM = Number(anoAnt[i]) || 0
+    return Math.round(atuais * (anoPassadoM / anoPassadoMesAtual))
+  })
   return [
-    { name: 'Real', data: real },
+    { name: 'Clientes ativos', data: real },
     { name: 'Projeção', data: proj },
   ]
 })
@@ -1118,11 +1131,14 @@ async function carregarDashboard() {
     const payload = res.data
     const list = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
     crescimentoBaseData.value = list.length >= 12 ? list.slice(0, 12) : Array(12).fill(0)
+    const anoAnt = Array.isArray(payload?.dataAnoAnterior) ? payload.dataAnoAnterior : []
+    crescimentoBaseDataAnoAnterior.value = anoAnt.length >= 12 ? anoAnt.slice(0, 12) : Array(12).fill(0)
     const cur = payload?.currentMonth
     crescimentoBaseCurrentMonth.value = typeof cur === 'number' && cur >= 1 && cur <= 12 ? cur : new Date().getMonth() + 1
   } catch (err) {
     console.error('Erro ao carregar crescimento da base:', err)
     crescimentoBaseData.value = Array(12).fill(0)
+    crescimentoBaseDataAnoAnterior.value = Array(12).fill(0)
     crescimentoBaseCurrentMonth.value = new Date().getMonth() + 1
   }
 
