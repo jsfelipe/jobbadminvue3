@@ -55,6 +55,10 @@ export const dashboardAdmin = {
 
   graficoVendasMes: () => cachedGet('graficoVendasMes', '/dashboard/graficoanual'),
 
+  /** Top 20 lançamentos. ?mes=1&ano=2026. Sem cache. */
+  topLancamentosFaturamento: (mes, ano) =>
+    api.get('/dashboard/top-lancamentos-faturamento', { params: { mes, ano } }),
+
   setupAnual: () => cachedGet('setupAnual', '/dashboard/setupanual'),
 
   primeirasTransacoesAnual: () => cachedGet('primeirasTransacoesAnual', '/dashboard/primeiras-transacoes-anual'),

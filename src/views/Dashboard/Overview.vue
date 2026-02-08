@@ -62,6 +62,55 @@
               Carregando...
             </div>
           </div>
+          <!-- Top 20 lançamentos por valor -->
+          <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
+            <h5 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Top 20 lançamentos por valor</h5>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por mês</label>
+            <select
+              v-model="lancamentosFaturamentoFiltro"
+              class="mb-3 rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              @change="carregarTopLancamentosFaturamento"
+            >
+              <option
+                v-for="opt in opcoesMesAno"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
+              </option>
+            </select>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">#</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Cliente</th>
+                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Valor</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Data</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                  <tr v-if="loadingTopLancamentos" class="text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="4" class="px-4 py-6">Carregando...</td>
+                  </tr>
+                  <tr v-else-if="!topLancamentosFaturamento.length" class="text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="4" class="px-4 py-6">Nenhum lançamento.</td>
+                  </tr>
+                  <tr
+                    v-else
+                    v-for="(row, idx) in topLancamentosFaturamento"
+                    :key="idx"
+                    class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  >
+                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ idx + 1 }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300">{{ formatBr(row.valor) }}</td>
+                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.data) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- Leads por Mês e Vendas por mês: 2 colunas quando os dois existem, 1 coluna quando só Leads (ex.: perfil 4) -->
@@ -213,7 +262,7 @@
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
             Clientes com pelo menos 1 acesso nos últimos 2 meses, ao fim de cada mês (ano atual).
-            <span v-if="crescimentoBaseCurrentMonth < 12" class="block mt-1">Meses futuros: projeção por tendência (regressão linear).</span>
+            <span v-if="crescimentoBaseCurrentMonth < 12" class="block mt-1">Meses futuros: projeção por tendência (regressão linear com base nos últimos 3 meses).</span>
           </p>
           <div class="h-[300px] w-full">
             <VueApexCharts
@@ -520,6 +569,9 @@ const statsCards = ref([
 ])
 
 const vendasData = ref([])
+const topLancamentosFaturamento = ref([])
+const loadingTopLancamentos = ref(true)
+const lancamentosFaturamentoFiltro = ref('')
 const leadsData = ref([])
 const setupData = ref([])
 const primeirasData = ref([])
@@ -605,6 +657,29 @@ function getMesAnoFromLeadsFiltro() {
   const [ano, mes] = v.split('-').map(Number)
   const y = new Date().getFullYear()
   return { mes: mes || new Date().getMonth() + 1, ano: ano || y }
+}
+
+function getMesAnoFromLancamentosFiltro() {
+  const v = lancamentosFaturamentoFiltro.value || ''
+  const [ano, mes] = v.split('-').map(Number)
+  const y = new Date().getFullYear()
+  return { mes: mes || new Date().getMonth() + 1, ano: ano || y }
+}
+
+async function carregarTopLancamentosFaturamento() {
+  const { mes, ano } = getMesAnoFromLancamentosFiltro()
+  if (!mes || !ano) return
+  loadingTopLancamentos.value = true
+  try {
+    const res = await dashboardAdmin.topLancamentosFaturamento(mes, ano)
+    const list = res.data?.data ?? res.data ?? []
+    topLancamentosFaturamento.value = Array.isArray(list) ? list : []
+  } catch (err) {
+    console.error('Erro ao carregar top lançamentos faturamento:', err)
+    topLancamentosFaturamento.value = []
+  } finally {
+    loadingTopLancamentos.value = false
+  }
 }
 
 async function carregarDetalheLeadsMes() {
@@ -953,11 +1028,22 @@ async function carregarDashboard() {
   loadingSemUso.value = true
   loadingTopAcesso.value = true
   loadingRisco.value = true
+  if (isPerfil1.value) loadingTopLancamentos.value = true
 
   const promises = [graficoLeadsPorMes(), dadosSetup()]
   if (!isPerfil4.value) promises.push(dadosPrimeirasTransacoes())
   if (isPerfil1.value) promises.unshift(graficoVendasAnual())
   await Promise.allSettled(promises)
+
+  if (isPerfil1.value) {
+    if (!lancamentosFaturamentoFiltro.value) {
+      const d = new Date()
+      lancamentosFaturamentoFiltro.value = `${d.getFullYear()}-${d.getMonth() + 1}`
+    }
+    await carregarTopLancamentosFaturamento()
+  } else {
+    loadingTopLancamentos.value = false
+  }
 
   try {
     const res = await dashboardAdmin.clientesSemUso()
