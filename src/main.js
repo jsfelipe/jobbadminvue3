@@ -1,6 +1,13 @@
 import './assets/main.css'
 import './assets/meu-estilo.css'
 
+// ResizeObserver loop: erro benigno (el-table, ApexCharts, etc.). Suprime apenas este aviso.
+const _onError = window.onerror
+window.onerror = function (msg, ...rest) {
+  if (typeof msg === 'string' && msg.includes('ResizeObserver')) return true
+  return _onError ? _onError.apply(this, [msg, ...rest]) : false
+}
+
 // Handsontable: registra todos os cell types (autocomplete, numeric, etc.) para uso com HotTable
 import Handsontable from 'handsontable/base'
 import { registerAllModules } from 'handsontable/registry'
