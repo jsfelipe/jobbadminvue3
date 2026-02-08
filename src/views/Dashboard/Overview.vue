@@ -1,12 +1,12 @@
 <template>
   <admin-layout>
     <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <!-- Stats cards -->
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- Stats cards: flex wrap para preencher o espaço sem buracos -->
+      <div class="flex flex-wrap gap-6">
         <div
           v-for="stats in displayedStatsCards"
           :key="stats.title"
-          class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800"
+          class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800 min-w-[200px] flex-1"
         >
           <div class="flex items-center">
             <div
@@ -64,9 +64,14 @@
           </div>
         </div>
 
-        <!-- Leads por Mês e Vendas por mês lado a lado -->
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <!-- Leads por Mês e Vendas por mês: 2 colunas quando os dois existem, 1 coluna quando só Leads (ex.: perfil 4) -->
+        <div
+          :class="[
+            'grid gap-6',
+            isPerfil4 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
+          ]"
+        >
+          <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800 min-w-0">
             <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Leads por Mês
             </h4>
@@ -122,7 +127,7 @@
                       :key="idx"
                       class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     >
-                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
                       <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.data_cadastro) }}</td>
                     </tr>
                   </tbody>
@@ -131,7 +136,7 @@
             </div>
           </div>
 
-          <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+          <div v-if="!isPerfil4" class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
             <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Vendas por mês (Setup + primeira mensalidade)
             </h4>
@@ -191,7 +196,7 @@
                       :key="idx"
                       class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     >
-                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
                       <td class="whitespace-nowrap px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300">{{ formatBr(row.valor) }}</td>
                     </tr>
                   </tbody>
@@ -255,7 +260,7 @@
                   class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ (pageTopAcesso - 1) * perPageTopAcesso + idx + 1 }}</td>
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.total_acessos ?? '—' }}</td>
                 </tr>
               </tbody>
@@ -330,7 +335,7 @@
                   :key="idx"
                   class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.dominio || '—' }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.ultimo_acesso) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-right">
@@ -368,7 +373,6 @@
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Nome</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Domínio</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">E-mail</th>
-                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Qtd usuários</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Vencimento</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Último acesso</th>
                   <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">WhatsApp</th>
@@ -377,10 +381,10 @@
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                 <tr v-if="loadingSemUso" class="text-center text-gray-500 dark:text-gray-400">
-                  <td colspan="8" class="px-4 py-6">Carregando...</td>
+                  <td colspan="7" class="px-4 py-6">Carregando...</td>
                 </tr>
                 <tr v-else-if="!clientesSemUso.length" class="text-center text-gray-500 dark:text-gray-400">
-                  <td colspan="8" class="px-4 py-6">Nenhum cliente inadimplente.</td>
+                  <td colspan="7" class="px-4 py-6">Nenhum cliente inadimplente.</td>
                 </tr>
                 <tr
                   v-else
@@ -388,10 +392,9 @@
                   :key="idx"
                   class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.dominio || '—' }}</td>
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.email || '—' }}</td>
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.qtd_usuarios ?? '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ primeiroEmail(row.email) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.vencimento) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.ultimo_acesso) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-right">
@@ -434,10 +437,19 @@ const isPerfil1 = computed(() => {
   return id == 1 || id === '1'
 })
 
+const isPerfil4 = computed(() => {
+  const data = store.state.Login?.data
+  const id = data?.id_perfil ?? data?.id_usuario_tipo
+  return id == 4 || id === '4'
+})
+
 const displayedStatsCards = computed(() => {
   let list = statsCards.value
   if (!isPerfil1.value) {
     list = list.filter((s) => s.title !== 'Total Mês Atual' && s.title !== 'Ticket médio')
+  }
+  if (isPerfil4.value) {
+    list = list.filter((s) => s.title !== 'Vendas Mês Atual' && s.title !== 'Ticket médio')
   }
   return list
 })
@@ -617,6 +629,16 @@ const formatDate = (d) => {
   const [y, m, day] = String(d).split(/[-T]/)
   if (!y || !m || !day) return d
   return `${day}/${m}/${y}`
+}
+const truncateNome = (s, max = 30) => {
+  if (s == null || s === '') return '—'
+  const str = String(s)
+  return str.length <= max ? str : str.slice(0, max) + '...'
+}
+const primeiroEmail = (s) => {
+  if (s == null || s === '') return '—'
+  const first = String(s).split(/[,;]/)[0]?.trim()
+  return first || '—'
 }
 
 const MSG_WHATSAPP_SEM_USO = 'Olá! Notamos que faz um tempo que você não acessa o Jobb. Está tudo bem? Precisa de algum suporte ou tem alguma dúvida? Estamos à disposição!'
@@ -932,7 +954,8 @@ async function carregarDashboard() {
   loadingTopAcesso.value = true
   loadingRisco.value = true
 
-  const promises = [graficoLeadsPorMes(), dadosSetup(), dadosPrimeirasTransacoes()]
+  const promises = [graficoLeadsPorMes(), dadosSetup()]
+  if (!isPerfil4.value) promises.push(dadosPrimeirasTransacoes())
   if (isPerfil1.value) promises.unshift(graficoVendasAnual())
   await Promise.allSettled(promises)
 
@@ -975,7 +998,7 @@ async function carregarDashboard() {
     loadingRisco.value = false
   }
 
-  if (isPerfil1.value) {
+  if (isPerfil1.value && !isPerfil4.value) {
     try {
       const res = await dashboardAdmin.ticketMedio()
       const val = res.data?.data ?? res.data
@@ -1033,13 +1056,15 @@ async function carregarDashboard() {
     statsCards.value[3].value = 0
   }
 
-  try {
-    const vendasMesRes = await dashboardAdmin.primeirasTransacoesMesAtual()
-    const total = Number(vendasMesRes.data?.data ?? vendasMesRes.data ?? 0)
-    statsCards.value[4].value = 'R$ ' + total.toFixed(2).replace('.', ',')
-  } catch (error) {
-    console.error('Erro ao carregar vendas mês atual (primeiras):', error)
-    statsCards.value[4].value = 'R$ 0,00'
+  if (!isPerfil4.value) {
+    try {
+      const vendasMesRes = await dashboardAdmin.primeirasTransacoesMesAtual()
+      const total = Number(vendasMesRes.data?.data ?? vendasMesRes.data ?? 0)
+      statsCards.value[4].value = 'R$ ' + total.toFixed(2).replace('.', ',')
+    } catch (error) {
+      console.error('Erro ao carregar vendas mês atual (primeiras):', error)
+      statsCards.value[4].value = 'R$ 0,00'
+    }
   }
 }
 
