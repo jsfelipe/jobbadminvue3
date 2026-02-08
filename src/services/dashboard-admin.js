@@ -47,6 +47,10 @@ export const dashboardAdmin = {
 
   graficoLeadsPorMes: () => cachedGet('graficoLeadsPorMes', '/dashboard/graficoleadspormes'),
 
+  /** Detalhe leads por mês: ?mes=1&ano=2026. Sem cache. */
+  leadsDetalheMes: (mes, ano) =>
+    api.get('/dashboard/leads-detalhe-mes', { params: { mes, ano } }),
+
   amountVendasMes: () => cachedGet('amountVendasMes', '/dashboard/vendasmes'),
 
   graficoVendasMes: () => cachedGet('graficoVendasMes', '/dashboard/graficoanual'),
@@ -58,6 +62,10 @@ export const dashboardAdmin = {
   primeirasTransacoesMesAtual: () =>
     cachedGet('primeirasTransacoesMesAtual', '/dashboard/primeiras-transacoes-mes-atual'),
 
+  /** Detalhe por mês: ?mes=1&ano=2026. Sem cache. */
+  primeirasTransacoesDetalheMes: (mes, ano) =>
+    api.get('/dashboard/primeiras-transacoes-detalhe-mes', { params: { mes, ano } }),
+
   clientesSemUso: () => cachedGet('clientesSemUso', '/dashboard/clientes-sem-uso'),
 
   ticketMedio: () => cachedGet('ticketMedio', '/dashboard/ticket-medio'),
@@ -66,7 +74,9 @@ export const dashboardAdmin = {
 
   crescimentoBase: () => cachedGet('crescimentoBase', '/dashboard/crescimento-base'),
 
-  topClientesAcesso: () => cachedGet('topClientesAcesso', '/dashboard/top-clientes-acesso'),
+  /** Paginado: ?page=1&per_page=10. Sem cache. */
+  topClientesAcesso: (page = 1, per_page = 10) =>
+    api.get('/dashboard/top-clientes-acesso', { params: { page, per_page } }),
 
   clientesRiscoAbandono: () => cachedGet('clientesRiscoAbandono', '/dashboard/clientes-risco-abandono')
 }

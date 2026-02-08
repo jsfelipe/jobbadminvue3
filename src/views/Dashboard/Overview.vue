@@ -78,11 +78,55 @@
                 :options="chartOptionsLeads"
                 :series="chartSeriesLeads"
               />
-              <div
-                v-else
-                class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
-              >
+            <div
+              v-else
+              class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
+            >
                 Carregando...
+              </div>
+            </div>
+            <!-- Detalhe leads por mês: select + tabela -->
+            <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por mês</label>
+              <select
+                v-model="leadsMesFiltro"
+                class="rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                @change="carregarDetalheLeadsMes"
+              >
+                <option
+                  v-for="opt in opcoesMesAno"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+              <div class="mt-3 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Cliente</th>
+                      <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Data cadastro</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                    <tr v-if="loadingDetalheLeads" class="text-center text-gray-500 dark:text-gray-400">
+                      <td colspan="2" class="px-4 py-6">Carregando...</td>
+                    </tr>
+                    <tr v-else-if="!detalheLeadsMes.length" class="text-center text-gray-500 dark:text-gray-400">
+                      <td colspan="2" class="px-4 py-6">Nenhum lead neste mês.</td>
+                    </tr>
+                    <tr
+                      v-else
+                      v-for="(row, idx) in detalheLeadsMes"
+                      :key="idx"
+                      class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    >
+                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.data_cadastro) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -110,16 +154,61 @@
                 Carregando...
               </div>
             </div>
+            <!-- Detalhe por mês: select + tabela -->
+            <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por mês</label>
+              <select
+                v-model="vendasMesFiltro"
+                class="rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                @change="carregarDetalheVendasMes"
+              >
+                <option
+                  v-for="opt in opcoesMesAno"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+              <div class="mt-3 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Cliente</th>
+                      <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Valor pago</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                    <tr v-if="loadingDetalheVendas" class="text-center text-gray-500 dark:text-gray-400">
+                      <td colspan="2" class="px-4 py-6">Carregando...</td>
+                    </tr>
+                    <tr v-else-if="!detalheVendasMes.length" class="text-center text-gray-500 dark:text-gray-400">
+                      <td colspan="2" class="px-4 py-6">Nenhum cliente neste mês.</td>
+                    </tr>
+                    <tr
+                      v-else
+                      v-for="(row, idx) in detalheVendasMes"
+                      :key="idx"
+                      class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    >
+                      <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                      <td class="whitespace-nowrap px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300">{{ formatBr(row.valor) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Crescimento da base -->
+        <!-- Crescimento da base (clientes ativos) -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
           <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Crescimento da base
+            Crescimento da base (clientes ativos)
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Total acumulado de clientes ao fim de cada mês (ano atual).
+            Clientes com pelo menos 1 acesso nos últimos 2 meses, ao fim de cada mês (ano atual).
+            <span v-if="crescimentoBaseCurrentMonth < 12" class="block mt-1">Meses futuros: projeção por tendência (regressão linear).</span>
           </p>
           <div class="h-[300px] w-full">
             <VueApexCharts
@@ -135,13 +224,13 @@
           </div>
         </div>
 
-        <!-- Top clientes por acesso -->
+        <!-- Top clientes com mais acesso -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
           <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Top clientes por acesso
+            Top clientes com mais acesso
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Maior número de acessos no último ano. Máx. 15.
+            Maior número de acessos nos últimos 3 meses.
           </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -165,38 +254,75 @@
                   :key="idx"
                   class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ idx + 1 }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ (pageTopAcesso - 1) * perPageTopAcesso + idx + 1 }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.total_acessos ?? '—' }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <div v-if="totalTopAcesso > 0" class="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ totalTopAcesso }} cliente(s)
+            </span>
+            <select
+              v-model="perPageTopAcesso"
+              class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              @change="onPerPageTopAcessoChange"
+            >
+              <option :value="10">10 por página</option>
+              <option :value="15">15 por página</option>
+              <option :value="25">25 por página</option>
+            </select>
+            <div class="flex items-center gap-1">
+              <button
+                type="button"
+                class="rounded border border-gray-300 bg-white px-2 py-1 text-sm disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                :disabled="pageTopAcesso <= 1 || loadingTopAcesso"
+                @click="goPageTopAcesso(pageTopAcesso - 1)"
+              >
+                Anterior
+              </button>
+              <span class="px-2 text-sm text-gray-600 dark:text-gray-400">
+                Página {{ pageTopAcesso }} de {{ totalPagesTopAcesso || 1 }}
+              </span>
+              <button
+                type="button"
+                class="rounded border border-gray-300 bg-white px-2 py-1 text-sm disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                :disabled="pageTopAcesso >= totalPagesTopAcesso || loadingTopAcesso"
+                @click="goPageTopAcesso(pageTopAcesso + 1)"
+              >
+                Próximo
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Clientes em risco de abandono (5 a 10 dias sem acesso) -->
+        <!-- Clientes em risco de abandono (10 dias ou mais sem acesso) -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
           <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             Clientes em risco de abandono
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Sem acesso entre 5 e 10 dias. Máx. 30.
+            Sem acesso há 10 dias ou mais. Máx. 30.
           </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Nome</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Domínio</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Último acesso</th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">WhatsApp</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Responsável</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                 <tr v-if="loadingRisco" class="text-center text-gray-500 dark:text-gray-400">
-                  <td colspan="3" class="px-4 py-6">Carregando...</td>
+                  <td colspan="5" class="px-4 py-6">Carregando...</td>
                 </tr>
                 <tr v-else-if="!clientesRiscoAbandono.length" class="text-center text-gray-500 dark:text-gray-400">
-                  <td colspan="3" class="px-4 py-6">Nenhum cliente em risco no período.</td>
+                  <td colspan="5" class="px-4 py-6">Nenhum cliente em risco no período.</td>
                 </tr>
                 <tr
                   v-else
@@ -205,7 +331,21 @@
                   class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.dominio || '—' }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.ultimo_acesso) }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-right">
+                    <a
+                      v-if="whatsappUrl(row.telefone)"
+                      :href="whatsappUrl(row.telefone)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center rounded p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30"
+                      title="Abrir WhatsApp"
+                    >
+                      <i class="fab fa-whatsapp text-xl" aria-hidden="true"></i>
+                    </a>
+                    <span v-else class="text-gray-400 dark:text-gray-500" title="Telefone não cadastrado">—</span>
+                  </td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.responsavel || '—' }}</td>
                 </tr>
               </tbody>
@@ -213,32 +353,34 @@
           </div>
         </div>
 
-        <!-- Clientes sem uso do sistema -->
+        <!-- Clientes inadimplentes -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
           <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Clientes sem uso do sistema
+            Clientes inadimplentes
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Clientes sem acesso nos últimos 10 dias. Ordenado por vencimento (decrescente). Máx. 30.
+            Vencimento em atraso há mais de 15 dias. Ordenado por vencimento (mais atrasados primeiro). Máx. 30.
           </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Nome</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Domínio</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">E-mail</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Qtd usuários</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Vencimento</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Último acesso</th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">WhatsApp</th>
                   <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Responsável</th>
-                  <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Ações</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                 <tr v-if="loadingSemUso" class="text-center text-gray-500 dark:text-gray-400">
-                  <td colspan="6" class="px-4 py-6">Carregando...</td>
+                  <td colspan="8" class="px-4 py-6">Carregando...</td>
                 </tr>
                 <tr v-else-if="!clientesSemUso.length" class="text-center text-gray-500 dark:text-gray-400">
-                  <td colspan="6" class="px-4 py-6">Nenhum cliente sem uso no período.</td>
+                  <td colspan="8" class="px-4 py-6">Nenhum cliente inadimplente.</td>
                 </tr>
                 <tr
                   v-else
@@ -247,10 +389,11 @@
                   class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ row.nome || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.dominio || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.email || '—' }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.qtd_usuarios ?? '—' }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.vencimento) }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.ultimo_acesso) }}</td>
-                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.responsavel || '—' }}</td>
                   <td class="whitespace-nowrap px-4 py-2 text-right">
                     <a
                       v-if="whatsappUrl(row.telefone)"
@@ -264,6 +407,7 @@
                     </a>
                     <span v-else class="text-gray-400 dark:text-gray-500" title="Telefone não cadastrado ou inválido">—</span>
                   </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.responsavel || '—' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -370,12 +514,102 @@ const primeirasData = ref([])
 const clientesSemUso = ref([])
 const loadingSemUso = ref(true)
 const crescimentoBaseData = ref([])
+const crescimentoBaseCurrentMonth = ref(12)
 const topClientesAcesso = ref([])
 const loadingTopAcesso = ref(true)
+const pageTopAcesso = ref(1)
+const perPageTopAcesso = ref(10)
+const totalTopAcesso = ref(0)
 const clientesRiscoAbandono = ref([])
 const loadingRisco = ref(true)
+const detalheVendasMes = ref([])
+const loadingDetalheVendas = ref(false)
+const vendasMesFiltro = ref('')
+const detalheLeadsMes = ref([])
+const loadingDetalheLeads = ref(false)
+const leadsMesFiltro = ref('')
 
 const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+const opcoesMesAno = (() => {
+  const anoAtual = new Date().getFullYear()
+  const opts = []
+  for (let ano = anoAtual; ano >= anoAtual - 1; ano--) {
+    for (let mes = 1; mes <= 12; mes++) {
+      opts.push({
+        value: `${ano}-${mes}`,
+        label: `${mesesNomes[mes - 1]} ${ano}`,
+        ano,
+        mes,
+      })
+    }
+  }
+  return opts
+})()
+
+const totalPagesTopAcesso = computed(() =>
+  Math.max(1, Math.ceil(totalTopAcesso.value / perPageTopAcesso.value))
+)
+
+async function carregarTopClientesAcesso(pg) {
+  const page = pg ?? pageTopAcesso.value
+  loadingTopAcesso.value = true
+  try {
+    const res = await dashboardAdmin.topClientesAcesso(page, perPageTopAcesso.value)
+    const list = res.data?.data ?? []
+    const total = res.data?.total ?? 0
+    topClientesAcesso.value = Array.isArray(list) ? list : []
+    totalTopAcesso.value = total
+    pageTopAcesso.value = page
+  } catch (err) {
+    console.error('Erro ao carregar top clientes acesso:', err)
+    topClientesAcesso.value = []
+    totalTopAcesso.value = 0
+  } finally {
+    loadingTopAcesso.value = false
+  }
+}
+
+function onPerPageTopAcessoChange() {
+  pageTopAcesso.value = 1
+  carregarTopClientesAcesso(1)
+}
+
+function goPageTopAcesso(page) {
+  if (page < 1 || page > totalPagesTopAcesso.value) return
+  carregarTopClientesAcesso(page)
+}
+
+function getMesAnoFromFiltro() {
+  const v = vendasMesFiltro.value || ''
+  const [ano, mes] = v.split('-').map(Number)
+  const y = new Date().getFullYear()
+  return { mes: mes || new Date().getMonth() + 1, ano: ano || y }
+}
+
+function getMesAnoFromLeadsFiltro() {
+  const v = leadsMesFiltro.value || ''
+  const [ano, mes] = v.split('-').map(Number)
+  const y = new Date().getFullYear()
+  return { mes: mes || new Date().getMonth() + 1, ano: ano || y }
+}
+
+async function carregarDetalheLeadsMes() {
+  const { mes, ano } = getMesAnoFromLeadsFiltro()
+  if (!mes || !ano) return
+  loadingDetalheLeads.value = true
+  try {
+    const res = await dashboardAdmin.leadsDetalheMes(mes, ano)
+    const list = res.data?.data ?? res.data ?? []
+    detalheLeadsMes.value = Array.isArray(list) ? list : []
+  } catch (err) {
+    console.error('Erro ao carregar detalhe leads por mês:', err)
+    detalheLeadsMes.value = []
+  } finally {
+    loadingDetalheLeads.value = false
+  }
+}
 
 const formatBr = (val) => 'R$ ' + (Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const formatDate = (d) => {
@@ -545,19 +779,29 @@ const chartSeriesPrimeiras = computed(() => [
 const chartOptionsCrescimento = computed(() => ({
   chart: { type: 'area', height: 300, toolbar: { show: false } },
   dataLabels: { enabled: false },
-  stroke: { curve: 'smooth' },
+  stroke: { curve: 'smooth', dashArray: [0, 6] },
   xaxis: { categories: meses },
   yaxis: {},
   fill: {
     type: 'gradient',
     gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.9, stops: [0, 90, 100] },
   },
-  colors: ['#0ea5e9'],
+  colors: ['#0ea5e9', '#0ea5e9'],
   tooltip: { theme: 'dark' },
+  legend: { show: true },
 }))
-const chartSeriesCrescimento = computed(() => [
-  { name: 'Total clientes (acum.)', data: crescimentoBaseData.value },
-])
+const chartSeriesCrescimento = computed(() => {
+  const data = crescimentoBaseData.value
+  const curIdx = Math.max(0, Math.min(11, (crescimentoBaseCurrentMonth.value || 1) - 1))
+  if (data.length !== 12) return [{ name: 'Clientes ativos', data }]
+  if (curIdx >= 11) return [{ name: 'Clientes ativos', data }]
+  const real = data.map((v, i) => (i <= curIdx ? v : null))
+  const proj = data.map((v, i) => (i >= curIdx ? v : null))
+  return [
+    { name: 'Real', data: real },
+    { name: 'Projeção', data: proj },
+  ]
+})
 
 const graficoVendasAnual = async () => {
   try {
@@ -636,6 +880,22 @@ const dadosSetup = async () => {
   }
 }
 
+async function carregarDetalheVendasMes() {
+  const { mes, ano } = getMesAnoFromFiltro()
+  if (!mes || !ano) return
+  loadingDetalheVendas.value = true
+  try {
+    const res = await dashboardAdmin.primeirasTransacoesDetalheMes(mes, ano)
+    const list = res.data?.data ?? res.data ?? []
+    detalheVendasMes.value = Array.isArray(list) ? list : []
+  } catch (err) {
+    console.error('Erro ao carregar detalhe vendas por mês:', err)
+    detalheVendasMes.value = []
+  } finally {
+    loadingDetalheVendas.value = false
+  }
+}
+
 const dadosPrimeirasTransacoes = async () => {
   try {
     const resposta = await dashboardAdmin.primeirasTransacoesAnual()
@@ -689,23 +949,20 @@ async function carregarDashboard() {
 
   try {
     const res = await dashboardAdmin.crescimentoBase()
-    const list = res.data?.data ?? res.data ?? []
-    crescimentoBaseData.value = Array.isArray(list) && list.length >= 12 ? list.slice(0, 12) : Array(12).fill(0)
+    const payload = res.data
+    const list = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
+    crescimentoBaseData.value = list.length >= 12 ? list.slice(0, 12) : Array(12).fill(0)
+    const cur = payload?.currentMonth
+    crescimentoBaseCurrentMonth.value = typeof cur === 'number' && cur >= 1 && cur <= 12 ? cur : new Date().getMonth() + 1
   } catch (err) {
     console.error('Erro ao carregar crescimento da base:', err)
     crescimentoBaseData.value = Array(12).fill(0)
+    crescimentoBaseCurrentMonth.value = new Date().getMonth() + 1
   }
 
   try {
-    const res = await dashboardAdmin.topClientesAcesso()
-    const list = res.data?.data ?? res.data ?? []
-    topClientesAcesso.value = Array.isArray(list) ? list : []
-  } catch (err) {
-    console.error('Erro ao carregar top clientes acesso:', err)
-    topClientesAcesso.value = []
-  } finally {
-    loadingTopAcesso.value = false
-  }
+    await carregarTopClientesAcesso(1)
+  } catch (_) {}
 
   try {
     const res = await dashboardAdmin.clientesRiscoAbandono()
@@ -802,7 +1059,13 @@ function onDashboardRefresh() {
 }
 
 onMounted(() => {
+  const d = new Date()
+  const mesAno = `${d.getFullYear()}-${d.getMonth() + 1}`
+  if (!vendasMesFiltro.value) vendasMesFiltro.value = mesAno
+  if (!leadsMesFiltro.value) leadsMesFiltro.value = mesAno
   carregarDashboard()
+  carregarDetalheVendasMes()
+  carregarDetalheLeadsMes()
   window.addEventListener('dashboard-refresh', onDashboardRefresh)
 })
 onUnmounted(() => {
