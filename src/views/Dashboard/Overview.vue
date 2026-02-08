@@ -265,7 +265,7 @@
           </h4>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
             Clientes com pelo menos 1 acesso nos últimos 2 meses, ao fim de cada mês (ano atual).
-            <span v-if="crescimentoBaseCurrentMonth < 12" class="block mt-1">Meses futuros: projeção por tendência (regressão linear com base nos últimos 3 meses).</span>
+            <span v-if="crescimentoBaseCurrentMonth < 12" class="block mt-1">Meses futuros: projeção com base em novos clientes (primeiro acesso) do mesmo mês do ano passado (tipo C).</span>
           </p>
           <div class="h-[300px] w-full">
             <VueApexCharts
