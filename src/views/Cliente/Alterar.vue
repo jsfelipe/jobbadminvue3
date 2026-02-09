@@ -207,7 +207,11 @@
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 E-mail Marketing
               </label>
-              <el-input v-model="data.email_marketing" type="email" />
+              <el-input
+                v-model="data.email_marketing"
+                type="text"
+                placeholder="Vários e-mails separados por vírgula"
+              />
             </div>
           </div>
 
@@ -443,19 +447,15 @@ const handleModalObs = (row) => {
 const updateCliente = async () => {
   loading.value = true
   try {
-    // Formata datas
-    if (data.value.data_vencimento) {
-      const d = new Date(data.value.data_vencimento)
-      data.value.data_vencimento = d.toISOString().split('T')[0]
+    // Formata datas (evita Invalid time value)
+    const toDateStr = (val) => {
+      if (!val) return val
+      const d = new Date(val)
+      return isNaN(d.getTime()) ? val : d.toISOString().split('T')[0]
     }
-    if (data.value.data_prorrogacao) {
-      const d = new Date(data.value.data_prorrogacao)
-      data.value.data_prorrogacao = d.toISOString().split('T')[0]
-    }
-    if (data.value.data_limite_teste) {
-      const d = new Date(data.value.data_limite_teste)
-      data.value.data_limite_teste = d.toISOString().split('T')[0]
-    }
+    data.value.data_vencimento = toDateStr(data.value.data_vencimento)
+    data.value.data_prorrogacao = toDateStr(data.value.data_prorrogacao)
+    data.value.data_limite_teste = toDateStr(data.value.data_limite_teste)
     data.value.id_usuario_responsavel = usuario.value
 
     const resposta = await clienteService.alterar(data.value)
