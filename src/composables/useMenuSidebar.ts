@@ -25,7 +25,8 @@ export interface MenuItemWithIcon {
   name: string
   path?: string
   subItems?: MenuSubItem[]
-  requiresProfile?: number // Perfil necessário para exibir o item (ex: 1 = apenas admin)
+  /** Perfil(is) permitido(s): número único ou array (ex: [1, 5]) */
+  requiresProfile?: number | number[]
 }
 
 /** Grupo do menu (título + itens) */
@@ -78,6 +79,7 @@ function normalizePathForRouter(apiPath: string | undefined | null): string {
     '/admin/clientes': '/admin/clientes',
     '/admin/desbloqueio': '/admin/desbloqueio',
     '/admin/extrato': '/admin/extrato',
+    '/admin/vendas/comissao': '/admin/vendas/comissao',
     '/admin/relatorio': '/admin/relatorio',
     '/admin/usuarios': '/usuarios',
     '/admin/query-database': '/admin/query-database',
@@ -133,6 +135,7 @@ const defaultMenuItems: MenuItemWithIcon[] = [
   { icon: UserGroupIcon, name: 'Meus Clientes', path: '/admin/clientes' },
   { icon: SettingsIcon, name: 'Desbloqueio', path: '/admin/desbloqueio' },
   { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato' },
+  { icon: PieChartIcon, name: 'Vendas / Comissão', path: '/admin/vendas/comissao', requiresProfile: [1, 6] },
   { icon: SettingsIcon, name: 'Alterar Databases', path: '/admin/query-database', requiresProfile: 1 },
   { icon: UserCircleIcon, name: 'Usuário', path: '/admin/usuarios', requiresProfile: 1 },
 ]
@@ -153,15 +156,13 @@ const idPlanoJobbGestor = ref<number | undefined>(undefined)
  * Filtra itens do menu baseado no perfil do usuário (igual ao projeto antigo)
  */
 function filterMenuByProfile(items: MenuItemWithIcon[], userProfile: number | null | undefined): MenuItemWithIcon[] {
-  // Se não tem perfil definido, mostra todos os itens sem restrição
-  // (igual ao projeto antigo: quando userProfile é null, mostra itens sem requiresProfile)
   if (userProfile === null || userProfile === undefined) {
     return items.filter(item => !item.requiresProfile)
   }
-  // Se tem perfil, filtra baseado no requiresProfile
   return items.filter(item => {
-    if (!item.requiresProfile) return true // Itens sem restrição sempre aparecem
-    return userProfile === item.requiresProfile // Itens com restrição só aparecem se o perfil corresponder
+    if (!item.requiresProfile) return true
+    const r = item.requiresProfile
+    return Array.isArray(r) ? r.includes(Number(userProfile)) : userProfile === r
   })
 }
 

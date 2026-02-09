@@ -131,6 +131,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/vendas/comissao',
+      name: 'admin.vendas.comissao',
+      component: () => import('../views/Vendas/Comissao.vue'),
+      meta: {
+        title: 'Vendas / Comissão',
+        requiresProfile: [1, 6],
+      },
+    },
+    {
       path: '/admin/usuarios',
       name: 'admin.usuarios',
       component: () => import('../views/Usuario/Listar.vue'),
@@ -173,11 +182,14 @@ router.beforeEach((to, from, next) => {
   const title = (to.meta.title as string) ?? 'Sistema Jobb- Admin'
   document.title = title ? `${title} | Sistema Jobb- Admin` : 'Sistema Jobb- Admin'
 
-  const requiredProfile = to.meta.requiresProfile as number | undefined
+  const requiredProfile = to.meta.requiresProfile as number | number[] | undefined
   if (requiredProfile != null) {
     const userData = store.state.Login?.data || {}
     const userProfile = userData.id_perfil ?? userData.id_usuario_tipo ?? null
-    if (userProfile !== requiredProfile) {
+    const allowed = Array.isArray(requiredProfile)
+      ? requiredProfile.includes(Number(userProfile))
+      : userProfile === requiredProfile
+    if (!allowed) {
       next({ path: '/admin/overview' })
       return
     }
