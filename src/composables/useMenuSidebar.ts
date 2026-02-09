@@ -134,7 +134,7 @@ const defaultMenuItems: MenuItemWithIcon[] = [
   { icon: GridIcon, name: 'Dashboard', path: '/admin/overview' },
   { icon: UserGroupIcon, name: 'Meus Clientes', path: '/admin/clientes' },
   { icon: SettingsIcon, name: 'Desbloqueio', path: '/admin/desbloqueio' },
-  { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato' },
+  { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato', requiresProfile: [1, 6] },
   { icon: PieChartIcon, name: 'Vendas / Comissão', path: '/admin/vendas/comissao', requiresProfile: [1, 6] },
   { icon: SettingsIcon, name: 'Alterar Databases', path: '/admin/query-database', requiresProfile: 1 },
   { icon: UserCircleIcon, name: 'Usuário', path: '/admin/usuarios', requiresProfile: 1 },

@@ -116,11 +116,11 @@
           </div>
         </div>
 
-        <!-- Leads por Mês e Vendas por mês: 2 colunas quando os dois existem, 1 coluna quando só Leads (ex.: perfil 4) -->
+        <!-- Leads por Mês e Vendas por mês: 2 colunas quando os dois existem, 1 coluna quando só Leads -->
         <div
           :class="[
             'grid gap-6',
-            isPerfil4 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
+            isPerfil1ou6 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
           ]"
         >
           <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800 min-w-0">
@@ -188,7 +188,7 @@
             </div>
           </div>
 
-          <div v-if="!isPerfil4" class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+          <div v-if="isPerfil1ou6" class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
             <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Vendas por mês (Setup + primeira mensalidade)
             </h4>
@@ -488,6 +488,14 @@ const isPerfil1 = computed(() => {
   return id == 1 || id === '1'
 })
 
+const isPerfil6 = computed(() => {
+  const data = store.state.Login?.data
+  const id = data?.id_perfil ?? data?.id_usuario_tipo
+  return id == 6 || id === '6'
+})
+
+const isPerfil1ou6 = computed(() => isPerfil1.value || isPerfil6.value)
+
 const isPerfil4 = computed(() => {
   const data = store.state.Login?.data
   const id = data?.id_perfil ?? data?.id_usuario_tipo
@@ -499,8 +507,11 @@ const displayedStatsCards = computed(() => {
   if (!isPerfil1.value) {
     list = list.filter((s) => s.title !== 'Total Mês Atual' && s.title !== 'Ticket médio')
   }
+  if (!isPerfil1ou6.value) {
+    list = list.filter((s) => s.title !== 'Vendas Mês Atual')
+  }
   if (isPerfil4.value) {
-    list = list.filter((s) => s.title !== 'Vendas Mês Atual' && s.title !== 'Ticket médio')
+    list = list.filter((s) => s.title !== 'Ticket médio')
   }
   return list
 })
@@ -1101,7 +1112,7 @@ async function carregarDashboard() {
   if (isPerfil1.value) loadingTopLancamentos.value = true
 
   const promises = [graficoLeadsPorMes(), dadosSetup()]
-  if (!isPerfil4.value) promises.push(dadosPrimeirasTransacoes())
+  if (isPerfil1ou6.value) promises.push(dadosPrimeirasTransacoes())
   if (isPerfil1.value) promises.unshift(graficoVendasAnual())
   await Promise.allSettled(promises)
 
@@ -1215,7 +1226,7 @@ async function carregarDashboard() {
     statsCards.value[3].value = 0
   }
 
-  if (!isPerfil4.value) {
+  if (isPerfil1ou6.value) {
     try {
       const vendasMesRes = await dashboardAdmin.primeirasTransacoesMesAtual()
       const total = Number(vendasMesRes.data?.data ?? vendasMesRes.data ?? 0)
@@ -1248,7 +1259,7 @@ onMounted(() => {
   if (!vendasMesFiltro.value) vendasMesFiltro.value = mesAno
   if (!leadsMesFiltro.value) leadsMesFiltro.value = mesAno
   carregarDashboard()
-  carregarDetalheVendasMes()
+  if (isPerfil1ou6.value) carregarDetalheVendasMes()
   carregarDetalheLeadsMes()
   window.addEventListener('dashboard-refresh', onDashboardRefresh)
 })
