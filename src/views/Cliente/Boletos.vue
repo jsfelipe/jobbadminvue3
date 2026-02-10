@@ -225,8 +225,10 @@ const formatDate = (date) => {
 }
 
 const formatCurrency = (value) => {
-  if (!value) return 'R$ 0,00'
-  return numbro(value).format({ thousandSeparator: '.', decimalSeparator: ',', prefix: 'R$ ' })
+  if (value == null || value === '') return 'R$ 0,00'
+  const num = parseFloat(String(value).replace(',', '.'))
+  if (Number.isNaN(num)) return 'R$ 0,00'
+  return 'R$ ' + numbro(num).format({ thousandSeparated: true, mantissa: 2 })
 }
 
 const handleModal = (row) => {
