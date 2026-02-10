@@ -244,6 +244,14 @@ const handleNovoBoleto = async () => {
     return
   }
 
+  const amountNumber = Number(novoBoletoData.value.amount)
+  if (Number.isNaN(amountNumber) || amountNumber <= 0) {
+    errors.value.push('Valor inválido. Use o formato 500.00 (com ponto).')
+    return
+  }
+
+  const formattedAmount = amountNumber.toFixed(2)
+
   const today = new Date()
   const hj = today.toISOString().split('T')[0]
 
@@ -255,7 +263,7 @@ const handleNovoBoleto = async () => {
   loading.value = true
   try {
     await clienteService.novoBoleto(
-      novoBoletoData.value.amount,
+      formattedAmount,
       novaData.value,
       novoBoleto.value
     )
@@ -315,9 +323,21 @@ const handleBoletoAvulso = async () => {
     return
   }
 
+  const amountNumber = Number(amount.value)
+  if (Number.isNaN(amountNumber) || amountNumber <= 0) {
+    errors.value.push('Valor inválido. Use o formato 500.00 (com ponto).')
+    return
+  }
+
+  const formattedAmount = amountNumber.toFixed(2)
+
   loading.value = true
   try {
-    const resposta = await clienteService.boletoAvulso(amount.value, dataBoletoAvulso.value, id.value)
+    const resposta = await clienteService.boletoAvulso(
+      formattedAmount,
+      dataBoletoAvulso.value,
+      id.value
+    )
 
     if (resposta.data?.status === 'error') {
       ElMessage.warning('Preencha todos os dados do cliente.')
