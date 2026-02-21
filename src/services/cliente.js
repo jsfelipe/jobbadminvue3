@@ -98,38 +98,37 @@ export const clienteService = {
 
   getNotas: async (id) => {
     const axios = (await import('axios')).default
-    const login = await axios.post(`https://nfe.sistemajobb.com.br/auth/login`, {
-      username: 'joob',
-      password: '123',
+    const paymentApiUrl = import.meta.env.VITE_PAYMENT_API || 
+      (import.meta.env.PROD ? 'https://paymentv2.sistemajobb.com.br' : 'http://localhost:9093')
+    return axios.get(`${paymentApiUrl}/api/nfes`, {
+      params: {
+        id_user: 'J',
+        cliente_id: id,
+      },
     })
-
-    if (login.data.token) {
-      return axios.get(`https://nfe.sistemajobb.com.br/nfse/consulta-solicitadas-emitidas`, {
-        params: {
-          id_user: 'J',
-          cliente_id: id,
-        },
-        headers: {
-          Authorization: `Bearer ${login.data.token}`,
-        },
-      })
-    }
-    throw new Error('Erro ao autenticar no serviço de NFe')
   },
 
   createNF: async (data) => {
     const axios = (await import('axios')).default
-    const result = await axios.post(`https://paymentv2.sistemajobb.com.br/api/create-nf`, {
+    const paymentApiUrl = import.meta.env.VITE_PAYMENT_API || 
+      (import.meta.env.PROD ? 'https://paymentv2.sistemajobb.com.br' : 'http://localhost:9093')
+    return axios.post(`${paymentApiUrl}/api/create-nf`, {
       id_user: 1,
       clientIdConexa: data.clientIdConexa,
       transaction_id: data.transaction_id,
       amount: parseFloat(data.amount),
     })
+  },
 
-    // Verificar notas pendentes
-    const updateStatusNF = await axios.get(`https://nfe.sistemajobb.com.br/nfse/verificar-notas-pendentes`)
-    console.log('updateStatusNF -->', updateStatusNF)
-
-    return result
+  consultarStatusNF: async (nfId, transactionId) => {
+    const axios = (await import('axios')).default
+    const paymentApiUrl = import.meta.env.VITE_PAYMENT_API || 
+      (import.meta.env.PROD ? 'https://paymentv2.sistemajobb.com.br' : 'http://localhost:9093')
+    return axios.get(`${paymentApiUrl}/api/nfes/status`, {
+      params: {
+        nf_id: nfId || null,
+        transaction_id: transactionId || null,
+      },
+    })
   },
 }

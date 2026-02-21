@@ -173,12 +173,108 @@
           </span>
         </template>
       </el-dialog>
+
+      <!-- Modal consulta status NF -->
+      <el-dialog
+        v-model="DialogStatusNF"
+        title="Status da Nota Fiscal"
+        width="60%"
+        center
+        :modal="false"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+      >
+        <div v-if="nfStatusLoading" class="text-center py-8">
+          <i class="el-icon-loading" style="font-size: 32px; color: #409eff"></i>
+          <p class="mt-4 text-gray-600 dark:text-gray-400">Consultando status da nota fiscal...</p>
+        </div>
+
+        <div v-if="!nfStatusLoading && nfStatusData">
+          <div
+            class="mb-4 rounded-lg p-4"
+            :class="{
+              'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300':
+                nfStatusData.nf_status === 'Pendente',
+              'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300':
+                nfStatusData.nf_status === 'Processando',
+              'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300':
+                nfStatusData.nf_status === 'Autorizado',
+              'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300':
+                nfStatusData.nf_status === 'Cancelado' ||
+                nfStatusData.nf_status === 'Erro' ||
+                nfStatusData.nf_status === 'Negado',
+            }"
+          >
+            <strong>Status:</strong> {{ nfStatusData.nf_status || 'Pendente' }}
+            <br v-if="nfStatusData.nf_motivo_status" />
+            <span v-if="nfStatusData.nf_motivo_status">{{ nfStatusData.nf_motivo_status }}</span>
+          </div>
+
+          <div v-if="nfStatusData.nf_status === 'Autorizado'" class="mt-4">
+            <h5 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Nota Fiscal Autorizada!
+            </h5>
+            <div class="mb-4 flex gap-3">
+              <el-button
+                v-if="nfStatusData.nf_link_pdf"
+                type="primary"
+                :href="nfStatusData.nf_link_pdf"
+                target="_blank"
+              >
+                <i class="fas fa-file-pdf"></i> Baixar PDF
+              </el-button>
+              <el-button
+                v-if="nfStatusData.nf_link_xml"
+                type="success"
+                :href="nfStatusData.nf_link_xml"
+                target="_blank"
+              >
+                <i class="fas fa-file-code"></i> Baixar XML
+              </el-button>
+            </div>
+            <div v-if="nfStatusData.nf_numero" class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+              <strong>Número da NF:</strong> {{ nfStatusData.nf_numero }}
+            </div>
+            <div
+              v-if="nfStatusData.nf_codigo_verificador"
+              class="mb-2 text-sm text-gray-700 dark:text-gray-300"
+            >
+              <strong>Código Verificador:</strong> {{ nfStatusData.nf_codigo_verificador }}
+            </div>
+          </div>
+
+          <div
+            v-if="
+              nfStatusData.nf_status !== 'Autorizado' &&
+              nfStatusData.nf_status !== 'Cancelado' &&
+              nfStatusData.nf_status !== 'Erro' &&
+              nfStatusData.nf_status !== 'Negado'
+            "
+            class="mt-4 text-sm text-gray-600 dark:text-gray-400"
+          >
+            <p>A nota fiscal está sendo processada. Esta janela será atualizada automaticamente.</p>
+          </div>
+        </div>
+
+        <div
+          v-if="!nfStatusLoading && nfStatusError"
+          class="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+        >
+          <strong>Erro:</strong> {{ nfStatusError }}
+        </div>
+
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="fecharModalNF">Fechar</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </div>
   </admin-layout>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { clienteService } from '@/services/cliente'
@@ -194,12 +290,19 @@ const loading = ref(false)
 const tableData = ref([])
 const centerDialogVisible = ref(false)
 const DialogBoletoAvulso = ref(false)
+const DialogStatusNF = ref(false)
 const errors = ref([])
 const novaData = ref('')
 const novoBoleto = ref(null)
 const novoBoletoData = ref({ amount: '', boleto_expiration_date: '' })
 const dataBoletoAvulso = ref(null)
 const amount = ref(null)
+const nfId = ref(null)
+const nfTransactionId = ref(null)
+const nfStatusData = ref(null)
+const nfStatusLoading = ref(false)
+const nfStatusError = ref(null)
+const nfStatusInterval = ref(null)
 
 const id = computed(() => route.params.id)
 
@@ -307,14 +410,104 @@ const handleDelete = async (transaction_id) => {
 const handleNF = async (transaction) => {
   loading.value = true
   try {
-    await clienteService.createNF(transaction)
-    ElMessage.success('NF solicitada, consulte daqui a alguns segundos!')
+    const resposta = await clienteService.createNF(transaction)
+
+    if (resposta.data && resposta.data.status === 'success' && resposta.data.data) {
+      // Abrir modal de consulta de status
+      nfId.value = resposta.data.data.nfeId || resposta.data.data.nf_id || null
+      nfTransactionId.value = transaction.transaction_id
+      DialogStatusNF.value = true
+      iniciarConsultaStatusNF()
+    } else {
+      ElMessage({
+        message:
+          resposta.data && resposta.data.message
+            ? resposta.data.message
+            : 'NF solicitada, mas não foi possível acompanhar o status automaticamente.',
+        type: resposta.data && resposta.data.status === 'error' ? 'error' : 'warning',
+        duration: 5000,
+      })
+    }
   } catch (error) {
     console.error('Erro ao criar NF:', error)
-    ElMessage.error('Erro ao criar NF')
+    ElMessage({
+      message:
+        'Erro ao solicitar NF: ' +
+        (error.response && error.response.data && error.response.data.message
+          ? error.response.data.message
+          : error.message),
+      type: 'error',
+      duration: 5000,
+    })
   } finally {
     loading.value = false
   }
+}
+
+const iniciarConsultaStatusNF = () => {
+  nfStatusLoading.value = true
+  nfStatusError.value = null
+  consultarStatusNF()
+
+  // Iniciar polling a cada 5 segundos
+  nfStatusInterval.value = setInterval(() => {
+    consultarStatusNF()
+  }, 5000)
+}
+
+const consultarStatusNF = async () => {
+  try {
+    const resposta = await clienteService.consultarStatusNF(nfId.value, nfTransactionId.value)
+
+    if (resposta.data && resposta.data.status === 'success' && resposta.data.data) {
+      nfStatusData.value = resposta.data.data
+      nfStatusLoading.value = false
+
+      // Se estiver autorizado, cancelado ou erro, parar polling
+      if (
+        nfStatusData.value.nf_status === 'Autorizado' ||
+        nfStatusData.value.nf_status === 'Cancelado' ||
+        nfStatusData.value.nf_status === 'Erro' ||
+        nfStatusData.value.nf_status === 'Negado'
+      ) {
+        pararConsultaStatusNF()
+
+        if (nfStatusData.value.nf_status === 'Autorizado') {
+          ElMessage({
+            message: 'Nota Fiscal autorizada com sucesso!',
+            type: 'success',
+            duration: 5000,
+          })
+        }
+      }
+    } else {
+      nfStatusError.value =
+        resposta.data && resposta.data.message ? resposta.data.message : 'Erro ao consultar status'
+      nfStatusLoading.value = false
+    }
+  } catch (error) {
+    nfStatusError.value =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : 'Erro ao consultar status da nota fiscal'
+    nfStatusLoading.value = false
+  }
+}
+
+const pararConsultaStatusNF = () => {
+  if (nfStatusInterval.value) {
+    clearInterval(nfStatusInterval.value)
+    nfStatusInterval.value = null
+  }
+}
+
+const fecharModalNF = () => {
+  pararConsultaStatusNF()
+  DialogStatusNF.value = false
+  nfStatusData.value = null
+  nfStatusError.value = null
+  nfId.value = null
+  nfTransactionId.value = null
 }
 
 const handleBoletoAvulso = async () => {
@@ -378,6 +571,11 @@ const listarBoletos = async (idCliente) => {
 
 onMounted(() => {
   listarBoletos(id.value)
+})
+
+onBeforeUnmount(() => {
+  // Limpar intervalo ao sair do componente
+  pararConsultaStatusNF()
 })
 </script>
 
