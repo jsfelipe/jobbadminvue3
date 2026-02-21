@@ -4,7 +4,7 @@
       <!-- Botões de ação -->
       <div class="mb-4 flex items-center gap-4">
         <router-link :to="{ name: 'admin.clientes' }">
-          <el-button type="default">< Voltar</el-button>
+          <el-button type="default">&lt; Voltar</el-button>
         </router-link>
         <el-button
           v-if="tipo_admin === 'gestor24h'"
@@ -184,12 +184,15 @@
         :close-on-click-modal="false"
         :close-on-press-escape="false"
       >
-        <div v-if="nfStatusLoading" class="text-center py-8">
-          <i class="el-icon-loading" style="font-size: 32px; color: #409eff"></i>
-          <p class="mt-4 text-gray-600 dark:text-gray-400">Consultando status da nota fiscal...</p>
+        <div
+          v-if="mostrarAguardeStatus"
+          class="text-center py-8"
+        >
+          <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+          <p class="mt-4 text-gray-600 dark:text-gray-400">Aguarde, consultando status da nota fiscal...</p>
         </div>
 
-        <div v-if="!nfStatusLoading && nfStatusData">
+        <div v-if="!mostrarAguardeStatus && nfStatusData">
           <div
             class="mb-4 rounded-lg p-4"
             :class="{
@@ -198,11 +201,12 @@
               'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300':
                 nfStatusData.nf_status === 'Processando',
               'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300':
-                nfStatusData.nf_status === 'Autorizado',
+                nfStatusData.nf_status === 'Autorizado' || nfStatusData.nf_status === 'Autorizada',
               'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300':
                 nfStatusData.nf_status === 'Cancelado' ||
                 nfStatusData.nf_status === 'Erro' ||
-                nfStatusData.nf_status === 'Negado',
+                nfStatusData.nf_status === 'Negado' ||
+                nfStatusData.nf_status === 'Negada',
             }"
           >
             <strong>Status:</strong> {{ nfStatusData.nf_status || 'Pendente' }}
@@ -210,7 +214,7 @@
             <span v-if="nfStatusData.nf_motivo_status">{{ nfStatusData.nf_motivo_status }}</span>
           </div>
 
-          <div v-if="nfStatusData.nf_status === 'Autorizado'" class="mt-4">
+          <div v-if="nfStatusData.nf_status === 'Autorizado' || nfStatusData.nf_status === 'Autorizada'" class="mt-4">
             <h5 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Nota Fiscal Autorizada!
             </h5>
@@ -246,9 +250,11 @@
           <div
             v-if="
               nfStatusData.nf_status !== 'Autorizado' &&
+              nfStatusData.nf_status !== 'Autorizada' &&
               nfStatusData.nf_status !== 'Cancelado' &&
               nfStatusData.nf_status !== 'Erro' &&
-              nfStatusData.nf_status !== 'Negado'
+              nfStatusData.nf_status !== 'Negado' &&
+              nfStatusData.nf_status !== 'Negada'
             "
             class="mt-4 text-sm text-gray-600 dark:text-gray-400"
           >
@@ -257,7 +263,7 @@
         </div>
 
         <div
-          v-if="!nfStatusLoading && nfStatusError"
+          v-if="!mostrarAguardeStatus && nfStatusError"
           class="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-300"
         >
           <strong>Erro:</strong> {{ nfStatusError }}
@@ -305,6 +311,18 @@ const nfStatusError = ref(null)
 const nfStatusInterval = ref(null)
 
 const id = computed(() => route.params.id)
+
+const isStatusFinal = (status) => {
+  if (!status) return false
+  const s = String(status)
+  return s === 'Negada' || s === 'Negado' || s === 'Autorizada' || s === 'Autorizado' || s === 'Cancelado' || s === 'Erro'
+}
+
+const mostrarAguardeStatus = computed(() => {
+  if (nfStatusLoading.value) return true
+  if (!nfStatusData.value) return false
+  return !isStatusFinal(nfStatusData.value.nf_status)
+})
 
 const tipo_admin = computed(() => {
   // Verifica se é gestor24h baseado no host ou perfil do usuário
@@ -412,8 +430,14 @@ const handleNF = async (transaction) => {
   try {
     const resposta = await clienteService.createNF(transaction)
 
+    if (resposta.data && resposta.data.status === 'already_exists') {
+      ElMessage.warning(
+        resposta.data.message || 'Já existe nota fiscal autorizada para esta transação. Não será criada novamente.'
+      )
+      return
+    }
+
     if (resposta.data && resposta.data.status === 'success' && resposta.data.data) {
-      // Abrir modal de consulta de status
       nfId.value = resposta.data.data.nfeId || resposta.data.data.nf_id || null
       nfTransactionId.value = transaction.transaction_id
       DialogStatusNF.value = true
@@ -466,13 +490,15 @@ const consultarStatusNF = async () => {
       // Se estiver autorizado, cancelado ou erro, parar polling
       if (
         nfStatusData.value.nf_status === 'Autorizado' ||
+        nfStatusData.value.nf_status === 'Autorizada' ||
         nfStatusData.value.nf_status === 'Cancelado' ||
         nfStatusData.value.nf_status === 'Erro' ||
-        nfStatusData.value.nf_status === 'Negado'
+        nfStatusData.value.nf_status === 'Negado' ||
+        nfStatusData.value.nf_status === 'Negada'
       ) {
         pararConsultaStatusNF()
 
-        if (nfStatusData.value.nf_status === 'Autorizado') {
+        if (nfStatusData.value.nf_status === 'Autorizado' || nfStatusData.value.nf_status === 'Autorizada') {
           ElMessage({
             message: 'Nota Fiscal autorizada com sucesso!',
             type: 'success',

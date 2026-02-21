@@ -75,25 +75,29 @@
         </el-table>
       </div>
 
-      <!-- Modal de detalhes da nota fiscal -->
+      <!-- Modal Status da Nota Fiscal -->
       <el-dialog
         v-model="dialogDetalhesVisible"
-        title="Detalhes da Nota Fiscal"
+        title="Status da Nota Fiscal"
         width="60%"
         center
+        @closed="pararPolling"
       >
         <div v-if="notaSelecionada" class="space-y-4">
           <!-- Status -->
           <div class="rounded-lg p-4" :class="getStatusClass(notaSelecionada.nf_status)">
             <h3 class="text-lg font-semibold mb-2">Status</h3>
-            <p class="text-xl">{{ notaSelecionada.nf_status || 'Pendente' }}</p>
-            <p v-if="notaSelecionada.nf_motivo_status" class="mt-2 text-sm whitespace-pre-line">
-              {{ notaSelecionada.nf_motivo_status }}
-            </p>
+            <p v-if="consultandoStatus" class="text-xl">Aguarde, buscando status...</p>
+            <template v-else>
+              <p class="text-xl">{{ notaSelecionada.nf_status || 'Pendente' }}</p>
+              <p v-if="notaSelecionada.nf_motivo_status" class="mt-2 text-sm whitespace-pre-line">
+                {{ notaSelecionada.nf_motivo_status }}
+              </p>
+            </template>
           </div>
 
           <!-- Informações principais -->
-          <div v-if="notaSelecionada.nf_status === 'Autorizado'" class="grid grid-cols-2 gap-4">
+          <div v-if="isAutorizada(notaSelecionada.nf_status)" class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número da NF</label>
               <p class="text-lg">{{ notaSelecionada.nf_numero || notaSelecionada.nf_numero_rps }}</p>
@@ -112,7 +116,7 @@
             </div>
           </div>
 
-          <!-- Botão consultar novamente -->
+          <!-- Em processamento: polling automático; botão manual opcional -->
           <div v-if="notaSelecionada.nf_status === 'EmProcessoDeAutorizacao'" class="flex gap-4">
             <el-button
               type="primary"
@@ -124,8 +128,8 @@
             </el-button>
           </div>
 
-          <!-- Links de download -->
-          <div v-if="notaSelecionada.nf_status === 'Autorizado'" class="flex flex-wrap gap-4">
+          <!-- Links quando autorizada -->
+          <div v-if="isAutorizada(notaSelecionada.nf_status)" class="flex flex-wrap gap-4">
             <a
               v-if="notaSelecionada.nf_link_pdf"
               :href="notaSelecionada.nf_link_pdf"
@@ -178,8 +182,20 @@ const tableData = ref([])
 const dialogDetalhesVisible = ref(false)
 const notaSelecionada = ref(null)
 const consultandoStatus = ref(false)
+const pollingInterval = ref(null)
+const INTERVALO_POLLING_MS = 5000
 
 const id = computed(() => route.params.id)
+
+const isAutorizada = (status) =>
+  status === 'Autorizada' || status === 'Autorizado'
+
+const pararPolling = () => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+    pollingInterval.value = null
+  }
+}
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -245,8 +261,17 @@ const listarNotas = async (idCliente) => {
 }
 
 const abrirModalDetalhes = (nota) => {
+  pararPolling()
   notaSelecionada.value = nota
   dialogDetalhesVisible.value = true
+  if (nota?.nf_status === 'EmProcessoDeAutorizacao') {
+    consultarStatusNF()
+    pollingInterval.value = setInterval(() => {
+      if (!dialogDetalhesVisible.value || !notaSelecionada.value) return
+      if (notaSelecionada.value.nf_status !== 'EmProcessoDeAutorizacao') return
+      consultarStatusNF()
+    }, INTERVALO_POLLING_MS)
+  }
 }
 
 const consultarStatusNF = async () => {
@@ -260,21 +285,24 @@ const consultarStatusNF = async () => {
     )
     
     if (response.data?.status === 'success' && response.data?.data) {
-      // Atualiza a nota selecionada com os novos dados
-      notaSelecionada.value = response.data.data
-      
-      // Atualiza também na tabela
+      const data = response.data.data
+      notaSelecionada.value = data
+
+      const statusFinal = data.nf_status
+      if (statusFinal === 'Negada' || isAutorizada(statusFinal)) {
+        pararPolling()
+      }
+
       const index = tableData.value.findIndex(
-        item => item.nf_id === response.data.data.nf_id || 
-        item.nf_numero_rps === response.data.data.nf_numero_rps
+        item => item.nf_id === data.nf_id || item.nf_numero_rps === data.nf_numero_rps
       )
       if (index !== -1) {
         tableData.value[index] = {
-          ...response.data.data,
-          updated_at: formatDate(response.data.data.updated_at)
+          ...data,
+          updated_at: formatDate(data.updated_at)
         }
       }
-      
+
       ElMessage.success('Status atualizado com sucesso')
     } else {
       ElMessage.error('Erro ao consultar status da nota')
@@ -288,7 +316,7 @@ const consultarStatusNF = async () => {
 }
 
 const getStatusClass = (status) => {
-  if (status === 'Autorizado') {
+  if (isAutorizada(status)) {
     return 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
   } else if (status === 'Negada' || status === 'Rejeitado' || status === 'Erro') {
     return 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
