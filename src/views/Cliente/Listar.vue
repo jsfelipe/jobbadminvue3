@@ -135,6 +135,7 @@
 
         <!-- Tabela -->
         <el-table
+          class="hidden md:table"
           :data="tableData"
           style="width: 100%"
           size="small"
@@ -230,6 +231,73 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <div class="space-y-4 md:hidden" v-loading="loading">
+          <el-card v-for="(row, index) in tableData" :key="row.id_cliente || index" shadow="never">
+            <div class="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {{ row.nome || '-' }}
+                </p>
+                <p class="text-xs text-gray-500">ID: {{ row.id_cliente || '-' }}</p>
+              </div>
+              <el-tag v-if="row.tipo_cliente === 'C'" type="success" disable-transitions>Cliente</el-tag>
+              <el-tag v-else-if="row.tipo_cliente === 'T'" type="info" disable-transitions>Teste</el-tag>
+              <el-tag v-else-if="row.tipo_cliente === 'A'" type="danger" disable-transitions>Cancelado</el-tag>
+              <span v-else-if="row.tipo_cliente === 'D'" class="text-xs text-gray-500">Deletado</span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
+              <p><strong>Subdominio:</strong> {{ row.subdominio || '-' }}</p>
+              <p><strong>Dt. Cad.:</strong> {{ formatDate(row.data_cadastro) || '-' }}</p>
+              <p><strong>Dt. Venc.:</strong> {{ formatDate(row.data_vencimento) || '-' }}</p>
+              <p><strong>Dt. Prorrog.:</strong> {{ formatDate(row.data_prorrogacao) || '-' }}</p>
+              <p>
+                <strong>Últ.Acesso:</strong>
+                {{ formatDate(row.data_ultimo_acesso) || '-' }}
+                <span v-if="row.qtde_acesso">({{ row.qtde_acesso }})</span>
+              </p>
+              <p><strong>QTD Func.:</strong> {{ row.qtd_funcionarios || '-' }}</p>
+              <p><strong>Interesse:</strong> {{ row.modulos_interesse || '-' }}</p>
+              <p>
+                <strong>Tipo:</strong>
+                <span v-if="row.tipo_jobb === 'V'">Video</span>
+                <span v-else-if="row.tipo_jobb === 'A'">Audio</span>
+                <span v-else-if="row.tipo_jobb === 'J03'">Jobb3.0</span>
+                <span v-else-if="row.tipo_jobb === 'G24'">Gestor24h</span>
+                <span v-else-if="row.tipo_jobb === 'E'">Estudio</span>
+                <span v-else>-</span>
+              </p>
+              <p><strong>Valor:</strong> {{ formatCurrency(row.valor) }} ({{ row.qtde_usuarios || 0 }})</p>
+              <p>
+                <strong>Regime:</strong>
+                <span v-if="row.tipo_empresa === 'MEI'">MEI</span>
+                <span v-else-if="row.tipo_empresa === 'SIMPLES'">Simples</span>
+                <span v-else-if="row.tipo_empresa === 'LUCRO'">Lucro P.</span>
+                <span v-else-if="row.tipo_empresa === 'NENHUMCNPJ'">Sem CNPJ</span>
+                <span v-else-if="row.tipo_empresa === 'OUTRO'">Outro</span>
+                <span v-else>-</span>
+              </p>
+              <p><strong>Telefone:</strong> {{ row.telefone || '-' }}</p>
+              <p><strong>E-mail:</strong> {{ row.email || '-' }}</p>
+              <p><strong>Responsável:</strong> {{ row.nome_usuario || '-' }}</p>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <el-button size="small" @click="handleBoleto(index, row)">
+                <i class="fas fa-barcode"></i>
+              </el-button>
+              <el-button size="small" @click="handleNF(index, row)">NF</el-button>
+              <el-button size="small" @click="handleWzap(index, row)">Wzap</el-button>
+              <el-button size="small" @click="handleDominio(index, row)">
+                <i class="fas fa-plus"></i>
+              </el-button>
+              <el-button size="small" @click="handleEdit(index, row)">
+                <i class="far fa-edit"></i>
+              </el-button>
+            </div>
+          </el-card>
+        </div>
 
         <!-- Paginação -->
         <div class="mt-4 flex items-center justify-between">

@@ -76,6 +76,7 @@
         </div>
 
         <el-table
+          class="hidden md:table"
           :data="filteredTableData"
           stripe
           resizable
@@ -110,6 +111,34 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <div class="space-y-4 md:hidden" v-loading="loading">
+          <el-card
+            v-for="(row, index) in filteredTableData"
+            :key="row.transaction_id || `${row.cliente_id}-${index}`"
+            shadow="never"
+          >
+            <div class="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {{ row.nome_cliente || '-' }}
+                </p>
+                <p class="text-xs text-gray-500">ID: {{ row.cliente_id || '-' }}</p>
+              </div>
+              <el-tag :type="row.status === 'paid' ? 'success' : 'warning'" disable-transitions>
+                {{ row.status || '-' }}
+              </el-tag>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
+              <p><strong>E-mail:</strong> {{ row.email_cliente || '-' }}</p>
+              <p><strong>ID Transação:</strong> {{ row.transaction_id || '-' }}</p>
+              <p><strong>Tipo Pgto.:</strong> {{ row.plan_payment_method || '-' }}</p>
+              <p><strong>Pago em:</strong> {{ formatDate(row.updated_at) || '-' }}</p>
+              <p><strong>Valor:</strong> {{ formatCurrency(row.amount) }}</p>
+            </div>
+          </el-card>
+        </div>
 
         <el-card class="mt-4">
           <div class="text-right">
