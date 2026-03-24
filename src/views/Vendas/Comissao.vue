@@ -242,7 +242,7 @@ async function buscarClientes(queryString, cb) {
     return
   }
   try {
-    const { data } = await api.get('/clientes/autocomplete', { params: { q: queryString } })
+    const { data } = await api.get('/clientes/autocomplete/comissao', { params: { q: queryString } })
     cb(Array.isArray(data) ? data : [])
   } catch {
     cb([])
