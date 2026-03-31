@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div class="flex h-full w-full max-w-full flex-col space-y-6 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
       <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
         <!-- Filtros -->
         <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -300,13 +300,13 @@
         </div>
 
         <!-- Paginação -->
-        <div class="mt-4 flex items-center justify-between">
+        <div class="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <el-pagination
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
             :page-sizes="[30, 60, 120, 240]"
             :page-size="filtros.perPage"
-            layout="total, sizes, prev, pager, next"
+            :layout="paginationLayout"
             :total="total"
           />
           <div class="text-right">
@@ -321,7 +321,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ModalWzap from './ModalWzap.vue'
@@ -337,6 +337,7 @@ const total = ref(0)
 const toogleModalWzap = ref(false)
 const dataModalWzap = ref({})
 const listResponsaveis = ref([])
+const isMobile = ref(false)
 
 const filtros = ref({
   search: '',
@@ -352,6 +353,14 @@ const filtros = ref({
   perPage: 30,
   desbloqueio: 'N',
 })
+
+const paginationLayout = computed(() =>
+  isMobile.value ? 'total, prev, pager, next' : 'total, sizes, prev, pager, next',
+)
+
+const syncViewport = () => {
+  isMobile.value = window.innerWidth < 640
+}
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -435,6 +444,9 @@ const carregarResponsaveis = async () => {
 }
 
 onMounted(() => {
+  syncViewport()
+  window.addEventListener('resize', syncViewport)
+
   // Carrega filtros salvos do localStorage
   const savedFilters = localStorage.getItem('searchClientes')
   if (savedFilters) {
@@ -447,6 +459,10 @@ onMounted(() => {
   }
   carregarResponsaveis()
   listar()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncViewport)
 })
 </script>
 

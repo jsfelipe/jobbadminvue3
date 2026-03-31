@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div class="flex h-full w-full max-w-full flex-col space-y-6 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
       <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
         <div class="mb-6">
           <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Filtros</h4>
@@ -131,8 +131,8 @@
             </div>
 
             <div class="grid grid-cols-1 gap-2 text-xs text-gray-700 dark:text-gray-300">
-              <p><strong>E-mail:</strong> {{ row.email_cliente || '-' }}</p>
-              <p><strong>ID Transação:</strong> {{ row.transaction_id || '-' }}</p>
+              <p class="break-words"><strong>E-mail:</strong> {{ row.email_cliente || '-' }}</p>
+              <p class="break-all"><strong>ID Transação:</strong> {{ row.transaction_id || '-' }}</p>
               <p><strong>Tipo Pgto.:</strong> {{ row.plan_payment_method || '-' }}</p>
               <p><strong>Pago em:</strong> {{ formatDate(row.updated_at) || '-' }}</p>
               <p><strong>Valor:</strong> {{ formatCurrency(row.amount) }}</p>
