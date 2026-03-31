@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="flex h-full w-full max-w-full flex-col space-y-6 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
+    <div class="flex h-full w-full max-w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
         <div class="mb-6">
           <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Filtros</h4>
@@ -75,14 +75,15 @@
           </div>
         </div>
 
-        <el-table
-          class="hidden md:table"
-          :data="filteredTableData"
-          stripe
-          resizable
-          style="width: 100%"
-          v-loading="loading"
-        >
+        <div class="hidden w-full overflow-x-auto md:block">
+          <el-table
+            class="min-w-[1250px]"
+            :data="filteredTableData"
+            stripe
+            resizable
+            style="width: 100%"
+            v-loading="loading"
+          >
           <el-table-column fixed prop="cliente_id" label="Id" width="90" />
           <el-table-column prop="nome_cliente" label="Nome" width="300" />
           <el-table-column prop="status" label="Status" width="100">
@@ -110,7 +111,8 @@
               <span>{{ formatCurrency(scope.row.amount) }}</span>
             </template>
           </el-table-column>
-        </el-table>
+          </el-table>
+        </div>
 
         <div class="space-y-4 md:hidden" v-loading="loading">
           <el-card

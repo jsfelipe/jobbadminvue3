@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="flex h-full w-full max-w-full flex-col space-y-6 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
+    <div class="flex h-full w-full max-w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
         <!-- Filtros -->
         <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -79,14 +79,15 @@
         </div>
 
         <!-- Tabela -->
-        <el-table
-          class="hidden md:table"
-          :data="tableData"
-          style="width: 100%"
-          size="small"
-          stripe
-          v-loading="loading"
-        >
+        <div class="hidden w-full overflow-x-auto md:block">
+          <el-table
+            class="min-w-[1550px]"
+            :data="tableData"
+            style="width: 100%"
+            size="small"
+            stripe
+            v-loading="loading"
+          >
           <el-table-column prop="id_cliente" label="Id" width="60" />
           <el-table-column prop="nome" label="Nome" width="190" />
           <el-table-column prop="subdominio" label="Subdominio" width="120" />
@@ -159,7 +160,8 @@
               </el-button>
             </template>
           </el-table-column>
-        </el-table>
+          </el-table>
+        </div>
 
         <div class="space-y-4 md:hidden" v-loading="loading">
           <el-card v-for="(row, index) in tableData" :key="row.id_cliente || index" shadow="never">
