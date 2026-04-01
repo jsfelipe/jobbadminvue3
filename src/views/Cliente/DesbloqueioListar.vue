@@ -79,15 +79,14 @@
         </div>
 
         <!-- Tabela -->
-        <div class="hidden w-full overflow-x-auto md:block">
-          <el-table
-            class="min-w-[1550px]"
-            :data="tableData"
-            style="width: 100%"
-            size="small"
-            stripe
-            v-loading="loading"
-          >
+        <el-table
+          class="hidden md:block"
+          :data="tableData"
+          style="width: 100%"
+          size="small"
+          stripe
+          v-loading="loading"
+        >
           <el-table-column prop="id_cliente" label="Id" width="60" />
           <el-table-column prop="nome" label="Nome" width="190" />
           <el-table-column prop="subdominio" label="Subdominio" width="120" />
@@ -160,8 +159,7 @@
               </el-button>
             </template>
           </el-table-column>
-          </el-table>
-        </div>
+        </el-table>
 
         <div class="space-y-4 md:hidden" v-loading="loading">
           <el-card v-for="(row, index) in tableData" :key="row.id_cliente || index" shadow="never">
