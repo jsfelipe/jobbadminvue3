@@ -2,10 +2,40 @@
   <admin-layout>
     <div class="flex h-full w-full flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <!-- Botões de ação -->
-      <div class="mb-4 flex items-center gap-4">
+      <div class="mb-4 flex flex-wrap items-center gap-4">
         <router-link :to="{ name: 'admin.clientes' }">
           <el-button type="default">&lt; Voltar</el-button>
         </router-link>
+        <div class="flex flex-wrap items-center gap-2">
+          <el-select
+            v-model="asaasBillingType"
+            placeholder="Forma no link"
+            style="width: 200px"
+            size="default"
+          >
+            <el-option label="Cliente escolhe (cartão/PIX/boleto)" value="UNDEFINED" />
+            <el-option label="Somente cartão" value="CREDIT_CARD" />
+            <el-option label="Somente PIX" value="PIX" />
+            <el-option label="Somente boleto" value="BOLETO" />
+          </el-select>
+          <el-button
+            type="primary"
+            :loading="loadingAsaasLink"
+            :disabled="!id"
+            @click="criarLinkAssinaturaAsaas"
+          >
+            Link assinatura Asaas
+          </el-button>
+        </div>
+        <span
+          v-if="clienteResumo.valor != null && clienteResumo.valor !== ''"
+          class="text-sm text-gray-600 dark:text-gray-400"
+        >
+          Plano: {{ formatCurrency(clienteResumo.valor) }}
+          <template v-if="clienteResumo.plano_periodo">
+            · ciclo cadastro: {{ clienteResumo.plano_periodo }}
+          </template>
+        </span>
       </div>
 
       <!-- Tabela de boletos -->
@@ -168,6 +198,37 @@
           </span>
         </template>
       </el-dialog>
+
+      <el-dialog
+        v-model="dialogAsaasLink"
+        title="Link de assinatura (Asaas)"
+        width="min(560px, 92vw)"
+        destroy-on-close
+      >
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Envie ao cliente. O pagamento é concluído na página do Asaas (assinatura recorrente).
+        </p>
+        <el-input
+          v-model="asaasPaymentLinkUrl"
+          type="textarea"
+          :rows="3"
+          readonly
+        />
+        <template #footer>
+          <el-button @click="dialogAsaasLink = false">Fechar</el-button>
+          <el-button type="default" @click="copiarLinkAsaas">Copiar link</el-button>
+          <el-button
+            type="primary"
+            tag="a"
+            :href="asaasPaymentLinkUrl || undefined"
+            target="_blank"
+            rel="noopener noreferrer"
+            :disabled="!asaasPaymentLinkUrl"
+          >
+            Abrir
+          </el-button>
+        </template>
+      </el-dialog>
     </div>
   </admin-layout>
 </template>
@@ -183,6 +244,11 @@ const route = useRoute()
 const router = useRouter()
 
 const loading = ref(false)
+const loadingAsaasLink = ref(false)
+const asaasBillingType = ref('UNDEFINED')
+const dialogAsaasLink = ref(false)
+const asaasPaymentLinkUrl = ref('')
+const clienteResumo = ref({ valor: null, plano_periodo: '' })
 const tableData = ref([])
 const DialogStatusNF = ref(false)
 const nfId = ref(null)
@@ -357,6 +423,66 @@ const fecharModalNF = () => {
   nfTransactionId.value = null
 }
 
+const carregarClienteResumo = async (idCliente) => {
+  try {
+    const res = await clienteService.listarId(idCliente)
+    const c = res.data || {}
+    clienteResumo.value = {
+      valor: c.valor ?? null,
+      plano_periodo: c.plano_periodo ?? '',
+    }
+  } catch {
+    clienteResumo.value = { valor: null, plano_periodo: '' }
+  }
+}
+
+const criarLinkAssinaturaAsaas = async () => {
+  try {
+    await ElMessageBox.confirm(
+      'Criar no Asaas um link de pagamento recorrente usando o valor do plano e o período do cadastro do cliente?',
+      'Assinatura Asaas',
+      { confirmButtonText: 'Sim', cancelButtonText: 'Cancelar', type: 'info' }
+    )
+  } catch {
+    return
+  }
+
+  loadingAsaasLink.value = true
+  asaasPaymentLinkUrl.value = ''
+  try {
+    const res = await clienteService.createAsaasSubscriptionPaymentLink(id.value, {
+      billing_type: asaasBillingType.value,
+    })
+    const url = res.data?.url
+    if (!url) {
+      ElMessage.error(res.data?.message || 'Resposta sem URL do Asaas')
+      return
+    }
+    asaasPaymentLinkUrl.value = url
+    dialogAsaasLink.value = true
+    ElMessage.success('Link gerado')
+  } catch (error) {
+    const msg =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      'Erro ao gerar link'
+    ElMessage.error(msg)
+  } finally {
+    loadingAsaasLink.value = false
+  }
+}
+
+const copiarLinkAsaas = async () => {
+  if (!asaasPaymentLinkUrl.value) return
+  try {
+    await navigator.clipboard.writeText(asaasPaymentLinkUrl.value)
+    ElMessage.success('Link copiado')
+  } catch {
+    ElMessage.error('Não foi possível copiar (permissão do navegador)')
+  }
+}
+
 const listarBoletos = async (idCliente) => {
   loading.value = true
   try {
@@ -376,7 +502,10 @@ const listarBoletos = async (idCliente) => {
 }
 
 onMounted(() => {
-  listarBoletos(id.value)
+  if (id.value) {
+    carregarClienteResumo(id.value)
+    listarBoletos(id.value)
+  }
 })
 
 onBeforeUnmount(() => {
