@@ -67,7 +67,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   ID Conexa
                 </label>
-                <el-tooltip content="Buscar ID Asaas (cus_) pelo CNPJ cadastrado" placement="top">
+                <el-tooltip content="Buscar ID Asaas (cus_) pelo CPF/CNPJ do campo CNPJ" placement="top">
                   <el-button
                     type="primary"
                     :loading="loadingAsaas"
@@ -439,8 +439,8 @@ const id = computed(() => route.params.id)
 
 const buscarAsaasCustomerId = async () => {
   const raw = String(data.value.cnpj_nfe || '').replace(/\D/g, '')
-  if (raw.length < 14) {
-    ElMessage.warning('Preencha um CNPJ válido (14 dígitos) em CNPJ')
+  if (raw.length !== 11 && raw.length !== 14) {
+    ElMessage.warning('Preencha CPF (11) ou CNPJ (14 dígitos) no campo CNPJ')
     return
   }
   loadingAsaas.value = true

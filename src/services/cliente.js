@@ -53,6 +53,13 @@ export const clienteService = {
     return api.post('payment/novoboletoasaas', payload)
   },
 
+  createAsaasSubscriptionPaymentLink: (clienteId, opts = {}) => {
+    return api.post('/asaas/subscription-payment-link', {
+      cliente_id: clienteId,
+      ...opts,
+    })
+  },
+
   cadastrar: (cliente) => {
     return api.post("/clientes", {
       empresa: cliente.empresa,
