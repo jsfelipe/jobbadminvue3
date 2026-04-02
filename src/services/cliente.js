@@ -45,6 +45,14 @@ export const clienteService = {
     return api.get(`payment/${id}`)
   },
 
+  asaasCustomerByCnpj: (cnpjDigits) => {
+    return api.get('/asaas/customer-by-cnpj', { params: { cnpj: cnpjDigits } })
+  },
+
+  novoBoletoAsaas: (payload) => {
+    return api.post('payment/novoboletoasaas', payload)
+  },
+
   cadastrar: (cliente) => {
     return api.post("/clientes", {
       empresa: cliente.empresa,

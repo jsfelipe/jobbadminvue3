@@ -63,9 +63,22 @@
               <el-input v-model="data.plano_periodo" />
             </div>
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                ID Conexa
-              </label>
+              <div class="mb-2 flex items-center gap-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ID Conexa
+                </label>
+                <el-tooltip content="Buscar ID Asaas (cus_) pelo CNPJ cadastrado" placement="top">
+                  <el-button
+                    type="primary"
+                    :loading="loadingAsaas"
+                    circle
+                    size="small"
+                    @click="buscarAsaasCustomerId"
+                  >
+                    <el-icon><Search /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </div>
               <el-input v-model="data.clientIdConexa" />
             </div>
           </div>
@@ -405,6 +418,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { clienteService } from '@/services/cliente'
 import { usuarioService } from '@/services/usuario'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { podeAcessarCliente } from '@/composables/useClienteAcesso'
 
 const route = useRoute()
@@ -412,6 +426,7 @@ const router = useRouter()
 const store = useStore()
 
 const loading = ref(false)
+const loadingAsaas = ref(false)
 const data = ref({})
 const usuario = ref('')
 const listUsuarios = ref([])
@@ -421,6 +436,30 @@ const obs = ref('')
 const id_obs = ref(0)
 
 const id = computed(() => route.params.id)
+
+const buscarAsaasCustomerId = async () => {
+  const raw = String(data.value.cnpj_nfe || '').replace(/\D/g, '')
+  if (raw.length < 14) {
+    ElMessage.warning('Preencha um CNPJ válido (14 dígitos) em CNPJ')
+    return
+  }
+  loadingAsaas.value = true
+  try {
+    const res = await clienteService.asaasCustomerByCnpj(raw)
+    const body = res.data
+    if (body?.id) {
+      data.value.clientIdConexa = body.id
+      ElMessage.success(body.name ? `ID Asaas: ${body.id} (${body.name})` : 'ID Asaas preenchido')
+    } else {
+      ElMessage.error(body?.message || 'Cliente não encontrado no Asaas')
+    }
+  } catch (error) {
+    const msg = error.response?.data?.message || error.message || 'Erro ao consultar Asaas'
+    ElMessage.error(msg)
+  } finally {
+    loadingAsaas.value = false
+  }
+}
 
 const formatDate = (date) => {
   if (!date) return ''
