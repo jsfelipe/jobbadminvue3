@@ -25,6 +25,9 @@ export const clienteService = {
   listarResponsaveis: () => {
     return api.get('/clientes/responsaveis/listar')
   },
+  autocomplete: (q) => {
+    return api.get('/clientes/autocomplete', { params: { q } })
+  },
 
   listarObs: (id) => {
     return api.get(`observacoes/${id}`)

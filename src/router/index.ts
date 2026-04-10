@@ -166,6 +166,46 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/tickets',
+      name: 'admin.tickets',
+      component: () => import('../views/Tickets/Admin/Listar.vue'),
+      meta: {
+        title: 'Tickets',
+      },
+    },
+    {
+      path: '/admin/tickets/novo',
+      name: 'admin.tickets.criar',
+      component: () => import('../views/Tickets/Admin/Criar.vue'),
+      meta: {
+        title: 'Criar Ticket',
+      },
+    },
+    {
+      path: '/admin/tickets/:id',
+      name: 'admin.tickets.detalhe',
+      component: () => import('../views/Tickets/Admin/Detalhe.vue'),
+      meta: {
+        title: 'Detalhe Ticket',
+      },
+    },
+    {
+      path: '/portal/tickets',
+      name: 'portal.tickets',
+      component: () => import('../views/Tickets/Portal/Listar.vue'),
+      meta: {
+        title: 'Portal Tickets',
+      },
+    },
+    {
+      path: '/portal/tickets/:id',
+      name: 'portal.tickets.detalhe',
+      component: () => import('../views/Tickets/Portal/Detalhe.vue'),
+      meta: {
+        title: 'Portal Ticket Detalhe',
+      },
+    },
+    {
       path: '/meu-perfil',
       name: 'MeuPerfil',
       component: () => import('../views/Others/Meu-perfil.vue'),

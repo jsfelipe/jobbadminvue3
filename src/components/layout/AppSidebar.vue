@@ -150,6 +150,12 @@
                     class="menu-item-text"
                     >{{ item.name }}</span
                   >
+                  <span
+                    v-if="(isExpanded || isHovered || isMobileOpen) && item.name === 'Tickets' && pendingSupportCount > 0"
+                    class="ml-auto inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white animate-pulse"
+                  >
+                    {{ pendingSupportCount }}
+                  </span>
                 </router-link>
                 <transition
                   @enter="startTransition"
@@ -253,7 +259,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import {
@@ -265,6 +271,7 @@ import {
 import { useSidebar } from "@/composables/useSidebar";
 import { useMenuSidebar } from "@/composables/useMenuSidebar";
 import { useStore } from "vuex";
+import { ticketsAdminService } from "@/services/tickets-admin";
 
 const route = useRoute();
 const router = useRouter();
@@ -272,6 +279,8 @@ const store = useStore();
 
 const { isExpanded, isMobileOpen, isHovered, openSubmenu, toggleMobileSidebar } = useSidebar();
 const { menuGroups } = useMenuSidebar();
+const pendingSupportCount = ref(0);
+let pendingIntervalId = null;
 
 
 /** URL do WhatsApp Suporte (mesma lógica do app antigo: host define o número). */
@@ -326,4 +335,25 @@ const startTransition = (el) => {
 const endTransition = (el) => {
   el.style.height = "";
 };
+
+const loadPendingSupportCount = async () => {
+  try {
+    const { data } = await ticketsAdminService.pendingSupportCount();
+    pendingSupportCount.value = Number(data?.count || 0);
+  } catch (e) {
+    // noop
+  }
+};
+
+onMounted(async () => {
+  await loadPendingSupportCount();
+  pendingIntervalId = window.setInterval(loadPendingSupportCount, 30000);
+});
+
+onUnmounted(() => {
+  if (pendingIntervalId) {
+    window.clearInterval(pendingIntervalId);
+    pendingIntervalId = null;
+  }
+});
 </script>
