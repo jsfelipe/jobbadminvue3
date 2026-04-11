@@ -8,10 +8,22 @@
             <option value="">Status</option>
             <option v-for="item in meta.status" :key="item.id" :value="item.id">{{ item.nome }}</option>
           </select>
-          <select v-model="filtro.id_prioridade" class="rounded-lg border px-3 py-2">
-            <option value="">Prioridade</option>
-            <option v-for="item in meta.prioridades" :key="item.id" :value="item.id">{{ item.nome }}</option>
-          </select>
+          <div>
+            <select v-model="filtro.id_prioridade" class="w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
+              <option value="">Prioridade</option>
+              <option v-for="item in meta.prioridades" :key="item.id" :value="item.id">
+                {{ prioridadeSelectLabel(item) }}
+              </option>
+            </select>
+            <div v-if="prioridadeFiltroSelecionada" class="mt-2">
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                :class="prioridadeBadgeClass(prioridadeFiltroSelecionada.cor)"
+              >
+                {{ prioridadeFiltroSelecionada.nome }}
+              </span>
+            </div>
+          </div>
           <select v-model="filtro.id_categoria" class="rounded-lg border px-3 py-2">
             <option value="">Categoria</option>
             <option v-for="item in meta.categorias" :key="item.id" :value="item.id">{{ item.nome }}</option>
@@ -24,10 +36,10 @@
       </div>
 
       <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm [&_td]:px-5 [&_td]:py-2.5 [&_th]:px-5 [&_th]:py-2.5">
           <thead>
             <tr class="text-left">
-              <th>ID</th><th>Data/Hora</th><th>Usuário</th><th>Unidade</th><th>Título</th><th>Descrição</th><th>Prioridade</th><th>Status</th><th>Ação</th>
+              <th>ID</th><th>Data/Hora</th><th>Usuário</th><th>Unidade</th><th>Assunto</th><th>Msg</th><th>Prioridade</th><th>Status</th><th>Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -64,15 +76,27 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketsAdminService } from '@/services/tickets-admin'
+import { prioridadeSelectLabel } from '@/utils/ticket-prioridade-label'
 
 const tickets = ref<any[]>([])
 const meta = reactive({ status: [], prioridades: [], categorias: [] } as any)
 const filtro = reactive({ q: '', id_status: '', id_prioridade: '', id_categoria: '' })
 const ultimoEvento = ref('')
 let pollingId: number | null = null
+
+const prioridadeFiltroSelecionada = computed(() => {
+  if (filtro.id_prioridade === '' || filtro.id_prioridade === null || filtro.id_prioridade === undefined) {
+    return undefined
+  }
+  const id = Number(filtro.id_prioridade)
+  if (Number.isNaN(id)) {
+    return undefined
+  }
+  return meta.prioridades.find((p: { id: number }) => Number(p.id) === id)
+})
 
 const prioridadeBadgeClass = (cor: string) => {
   const c = String(cor || '').toLowerCase()
@@ -84,7 +108,7 @@ const prioridadeBadgeClass = (cor: string) => {
 
 const resumirDescricao = (descricao: string) => {
   const texto = String(descricao || '')
-  return texto.length > 200 ? `${texto.slice(0, 200)}...` : texto
+  return texto.length > 100 ? `${texto.slice(0, 100)}...` : texto
 }
 
 const formatDateTime = (value: string) => {

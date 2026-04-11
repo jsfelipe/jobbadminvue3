@@ -3,6 +3,20 @@
     <div class="space-y-4">
       <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
         <h2 class="text-lg font-semibold">Ticket #{{ ticket?.id }}</h2>
+        <p class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+          <span
+            ><span class="font-semibold text-gray-800 dark:text-gray-200">Solicitante:</span>
+            {{ ticket?.nome_usuario_externo || '—' }}</span
+          >
+          <span
+            ><span class="font-semibold text-gray-800 dark:text-gray-200">Empresa:</span>
+            {{ empresaSolicitante }}</span
+          >
+          <span
+            ><span class="font-semibold text-gray-800 dark:text-gray-200">Aberto em:</span>
+            {{ formatDateTime(ticket?.created_at ?? '') }}</span
+          >
+        </p>
         <p class="mt-2 text-sm">
           <span class="font-semibold">Assunto:</span> {{ ticket?.titulo }}
         </p>
@@ -96,14 +110,48 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PortalTicketAnexos from '@/components/tickets/PortalTicketAnexos.vue'
 import { ticketsAdminService } from '@/services/tickets-admin'
 
+interface TicketRespostaItem {
+  id: number
+  autor_tipo: string
+  nome_autor: string
+  mensagem: string
+  created_at: string
+  anexos?: { id: number; nome_original: string }[]
+}
+
+interface AdminTicketDetalhe {
+  id: number
+  titulo: string
+  descricao: string
+  created_at: string
+  nome_usuario_externo?: string | null
+  unidade_nome?: string | null
+  unidade_sigla?: string | null
+  unidade_dbname?: string | null
+  id_status?: number
+  anexos_abertura?: { id: number; nome_original: string }[]
+  respostas?: TicketRespostaItem[]
+}
+
 const route = useRoute()
-const ticket = ref<any>(null)
+const ticket = ref<AdminTicketDetalhe | null>(null)
 const mensagem = ref('')
-const respostasOrdenadas = ref<any[]>([])
+const respostasOrdenadas = ref<TicketRespostaItem[]>([])
 const pendingReplyAttachments = ref<File[]>([])
 const anexosRespostaRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
-const statusSelecionado = ref<any>('')
-const statusOptions = ref<any[]>([])
+const statusSelecionado = ref<string | number>('')
+const statusOptions = ref<{ id: number; nome: string }[]>([])
+
+const empresaSolicitante = computed(() => {
+  const t = ticket.value
+  if (!t) return '—'
+  const parts: string[] = []
+  if (t.unidade_sigla) parts.push(t.unidade_sigla)
+  if (t.unidade_nome) parts.push(t.unidade_nome)
+  if (parts.length) return parts.join(' — ')
+  if (t.unidade_dbname) return t.unidade_dbname
+  return '—'
+})
 
 const anexosAbertura = computed(() => {
   const list = ticket.value?.anexos_abertura
@@ -120,7 +168,7 @@ const carregar = async () => {
   ticket.value = data.ticket
   statusSelecionado.value = data.ticket?.id_status || ''
   const respostas = Array.isArray(data.ticket?.respostas) ? data.ticket.respostas : []
-  respostasOrdenadas.value = [...respostas].sort((a: any, b: any) =>
+  respostasOrdenadas.value = [...respostas].sort((a, b) =>
     String(a.created_at).localeCompare(String(b.created_at))
   )
 }

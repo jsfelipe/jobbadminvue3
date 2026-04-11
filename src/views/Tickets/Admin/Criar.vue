@@ -29,10 +29,22 @@
           </div>
           <input v-model="form.email_contato" class="rounded-lg border px-3 py-2" placeholder="Email de contato" />
           <input v-model="form.assunto" class="rounded-lg border px-3 py-2" placeholder="Assunto" />
-          <select v-model="form.id_prioridade" class="rounded-lg border px-3 py-2">
-            <option value="">Prioridade</option>
-            <option v-for="item in meta.prioridades" :key="item.id" :value="item.id">{{ item.nome }}</option>
-          </select>
+          <div>
+            <select v-model="form.id_prioridade" class="w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
+              <option value="">Prioridade</option>
+              <option v-for="item in meta.prioridades" :key="item.id" :value="item.id">
+                {{ prioridadeSelectLabel(item) }}
+              </option>
+            </select>
+            <div v-if="prioridadeSelecionada" class="mt-2">
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                :class="prioridadeBadgeClass(prioridadeSelecionada.cor)"
+              >
+                {{ prioridadeSelecionada.nome }}
+              </span>
+            </div>
+          </div>
           <select v-model="form.id_categoria" class="rounded-lg border px-3 py-2">
             <option value="">Categoria</option>
             <option v-for="item in meta.categorias" :key="item.id" :value="item.id">{{ item.nome }}</option>
@@ -56,11 +68,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketsAdminService } from '@/services/tickets-admin'
 import { clienteService } from '@/services/cliente'
+import { prioridadeSelectLabel } from '@/utils/ticket-prioridade-label'
 
 const router = useRouter()
 const meta = reactive({ prioridades: [], categorias: [] } as any)
@@ -76,6 +89,25 @@ const form = reactive({
   id_prioridade: '',
   id_categoria: '',
 })
+
+const prioridadeSelecionada = computed(() => {
+  if (form.id_prioridade === '' || form.id_prioridade === null || form.id_prioridade === undefined) {
+    return undefined
+  }
+  const id = Number(form.id_prioridade)
+  if (Number.isNaN(id)) {
+    return undefined
+  }
+  return meta.prioridades.find((p: { id: string | number }) => Number(p.id) === id)
+})
+
+const prioridadeBadgeClass = (cor: string) => {
+  const c = String(cor || '').toLowerCase()
+  if (c === 'red') return 'bg-red-100 text-red-700'
+  if (c === 'yellow') return 'bg-yellow-100 text-yellow-700'
+  if (c === 'green') return 'bg-green-100 text-green-700'
+  return 'bg-gray-100 text-gray-700'
+}
 
 let buscaTimer: number | undefined
 const buscarClientes = () => {

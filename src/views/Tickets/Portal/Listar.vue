@@ -34,7 +34,7 @@
           <select v-model="form.id_prioridade" class="rounded-lg border px-3 py-2">
             <option value="">Prioridade</option>
             <option v-for="item in meta.prioridades" :key="item.id" :value="item.id">
-              {{ prioridadeLabel(item) }}
+              {{ prioridadeSelectLabel(item) }}
             </option>
           </select>
           <select v-model="form.id_categoria" class="rounded-lg border px-3 py-2">
@@ -103,6 +103,7 @@ import { Loader2 } from 'lucide-vue-next'
 import PortalLayout from '@/components/layout/PortalLayout.vue'
 import PortalTicketAnexos from '@/components/tickets/PortalTicketAnexos.vue'
 import { ticketsPortalService } from '@/services/tickets-portal'
+import { prioridadeSelectLabel } from '@/utils/ticket-prioridade-label'
 
 const route = useRoute()
 const router = useRouter()
@@ -148,17 +149,15 @@ const formatDateTime = (value: string) => {
 }
 
 const prioridadeSelecionada = computed(() => {
+  if (form.id_prioridade === '' || form.id_prioridade === null || form.id_prioridade === undefined) {
+    return undefined
+  }
   const id = Number(form.id_prioridade)
-  return meta.prioridades.find((p: any) => Number(p.id) === id)
+  if (Number.isNaN(id)) {
+    return undefined
+  }
+  return meta.prioridades.find((p: { id: string | number }) => Number(p.id) === id)
 })
-
-const prioridadeLabel = (item: any) => {
-  const cor = String(item?.cor || '').toLowerCase()
-  if (cor === 'red') return `🔴 ${item.nome}`
-  if (cor === 'yellow') return `🟡 ${item.nome}`
-  if (cor === 'green') return `🟢 ${item.nome}`
-  return item.nome
-}
 
 const prioridadeBadgeClass = (cor: string) => {
   const c = String(cor || '').toLowerCase()
