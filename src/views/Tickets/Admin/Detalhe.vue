@@ -1,6 +1,16 @@
 <template>
   <admin-layout>
     <div class="space-y-4">
+      <div
+        v-if="ticket?.aguardando_devs_atrasado"
+        class="rounded-lg border-2 border-orange-600 bg-orange-50 p-4 text-orange-950 shadow-sm dark:border-orange-500 dark:bg-orange-950/40 dark:text-orange-100"
+        role="alert"
+      >
+        <p class="text-sm font-bold">Este ticket está fora do prazo.</p>
+        <p class="mt-1 text-sm">
+          Permanece em &quot;Aguardando Devs.&quot; há mais de 36 horas sem mudança de status. Priorize o retorno à equipe de atendimento.
+        </p>
+      </div>
       <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
         <h2 class="text-lg font-semibold">Ticket #{{ ticket?.id }}</h2>
         <p class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
@@ -153,6 +163,7 @@ interface AdminTicketDetalhe {
   unidade_sigla?: string | null
   unidade_dbname?: string | null
   id_status?: number
+  aguardando_devs_atrasado?: boolean
   anexos_abertura?: { id: number; nome_original: string }[]
   respostas?: TicketRespostaItem[]
 }
