@@ -176,12 +176,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 import { useStore } from 'vuex'
 import { defineRule, Field, useForm } from 'vee-validate'
 import { required } from '@vee-validate/rules'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { toast } from 'vue3-toastify'
+import { ElNotification } from 'element-plus'
+
+interface LoginResponseData {
+  token?: string
+  tickets_aguardando_devs_atrasados?: { id: number; titulo: string }[]
+}
 
 defineRule('required', required)
 
@@ -200,8 +206,25 @@ const submitForm = handleSubmit(async (values) => {
   loading.value = true
   loginError.value = ''
   try {
-    await store.dispatch('Login/doLogin', values)
-    
+    const loginData = (await store.dispatch('Login/doLogin', values)) as LoginResponseData
+
+    const atrasados = loginData?.tickets_aguardando_devs_atrasados
+    if (Array.isArray(atrasados) && atrasados.length > 0) {
+      ElNotification({
+        title: 'Atenção: tickets fora do prazo (Aguardando Devs.)',
+        message: h('div', { class: 'max-h-52 overflow-y-auto text-sm' }, [
+          h(
+            'p',
+            { class: 'mb-2 font-medium' },
+            'Há chamados neste status há mais de 36 horas. Verifique a lista de tickets no admin.'
+          ),
+          ...atrasados.map((t) => h('p', { class: 'mt-0.5' }, `#${t.id} — ${t.titulo}`)),
+        ]),
+        type: 'warning',
+        duration: 0,
+      })
+    }
+
     // Tenta buscar dados do usuário, mas não bloqueia o login se falhar
     let user = null
     try {

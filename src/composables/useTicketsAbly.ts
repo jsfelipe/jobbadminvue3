@@ -12,29 +12,46 @@ const ABLY_PUSH_ACTIVE_KEY = 'jobbadmin-ably-push-activated'
 
 let client: Ably.Realtime | null = null
 
-async function maybeResubscribeWebPush(): Promise<void> {
-  if (typeof localStorage === 'undefined') {
-    return
+export async function syncWebPushSubscription(): Promise<{ ok: boolean; message: string }> {
+  if (!client) {
+    return { ok: false, message: 'Cliente Ably indisponível. Aguarde a conexão.' }
   }
-  try {
-    if (localStorage.getItem(ABLY_PUSH_ACTIVE_KEY) !== '1') {
-      return
-    }
-  } catch {
-    return
+  if (client.connection.state !== 'connected') {
+    return { ok: false, message: 'Aguarde o Ably conectar antes de ativar o push.' }
   }
-  if (!client || client.connection.state !== 'connected') {
-    return
+  if (typeof Notification === 'undefined') {
+    return { ok: false, message: 'Notificações não suportadas neste navegador.' }
   }
-  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
-    return
+  if (!('serviceWorker' in navigator)) {
+    return { ok: false, message: 'Service Worker não disponível.' }
+  }
+  if (Notification.permission !== 'granted') {
+    return { ok: false, message: 'Permissão de notificação necessária.' }
   }
   try {
     await client.push.activate()
     await client.channels.get(TICKETS_ABLY_CHANNEL).push.subscribeClient()
-    logAblyTickets('Web Push: re-inscrito no canal após conectar')
+    try {
+      localStorage.setItem(ABLY_PUSH_ACTIVE_KEY, '1')
+    } catch {
+      /* noop */
+    }
+    return { ok: true, message: 'Push ativado (avisos do sistema com o site fechado).' }
   } catch (e) {
-    logAblyTickets('Web Push: re-inscrever falhou', e)
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, message: msg }
+  }
+}
+
+async function trySyncWebPushAfterConnect(): Promise<void> {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return
+  }
+  const r = await syncWebPushSubscription()
+  if (r.ok) {
+    logAblyTickets('Web Push: inscrito no canal após conectar')
+  } else {
+    logAblyTickets('Web Push: sync após conectar falhou', r.message)
   }
 }
 
@@ -163,7 +180,7 @@ export function connectTicketsAbly(): void {
     ticketsBus.emit('tickets:ably-connected', true)
     logAblyTickets('conectado', { state: client?.connection.state, id: client?.connection.id })
     armTicketNotifyAudioOnUserGesture()
-    void maybeResubscribeWebPush()
+    void trySyncWebPushAfterConnect()
   })
 
   const setDisconnected = (label: string) => () => {
@@ -196,12 +213,6 @@ export function connectTicketsAbly(): void {
 }
 
 export async function activateAblyTicketsWebPush(): Promise<{ ok: boolean; message: string }> {
-  if (!client) {
-    return { ok: false, message: 'Cliente Ably indisponível. Aguarde a conexão.' }
-  }
-  if (client.connection.state !== 'connected') {
-    return { ok: false, message: 'Aguarde o Ably conectar antes de ativar o push.' }
-  }
   if (typeof Notification === 'undefined') {
     return { ok: false, message: 'Notificações não suportadas neste navegador.' }
   }
@@ -212,19 +223,7 @@ export async function activateAblyTicketsWebPush(): Promise<{ ok: boolean; messa
   if (perm !== 'granted') {
     return { ok: false, message: 'Permissão de notificação negada.' }
   }
-  try {
-    await client.push.activate()
-    await client.channels.get(TICKETS_ABLY_CHANNEL).push.subscribeClient()
-    try {
-      localStorage.setItem(ABLY_PUSH_ACTIVE_KEY, '1')
-    } catch {
-      /* noop */
-    }
-    return { ok: true, message: 'Push Ably ativado (notificações com o site fechado).' }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return { ok: false, message: msg }
-  }
+  return syncWebPushSubscription()
 }
 
 export async function disconnectTicketsAbly(options?: { deactivatePush?: boolean }): Promise<void> {

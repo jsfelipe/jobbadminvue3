@@ -29,7 +29,7 @@
             class="text-xs text-violet-600 hover:underline dark:text-violet-400"
             @click="onAblyPushClick"
           >
-            Push Ably (site fechado)
+            Reativar push
           </button>
         </div>
       </div>
@@ -40,7 +40,7 @@
         v-if="!setupComplete"
         class="px-3 pb-2 pt-1 text-[10px] leading-tight text-gray-500 dark:text-gray-400"
       >
-        Ative &quot;Push Ably&quot; após configurar Push no dashboard Ably (namespace do canal). Com isso, o navegador pode avisar mesmo com o site fechado.
+        Use &quot;Ativar alertas&quot; para permissão + notificação do sistema (site pode estar fechado). Requer Push configurado no dashboard Ably para o canal.
       </p>
       <div v-if="items.length === 0" class="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
         Nenhum alerta recente
@@ -93,7 +93,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ticketsBus, type TicketRealtimePayload } from '@/lib/tickets-bus'
-import { activateAblyTicketsWebPush } from '@/composables/useTicketsAbly'
+import { activateAblyTicketsWebPush, syncWebPushSubscription } from '@/composables/useTicketsAbly'
 
 const STORAGE_SETUP = 'tickets-support-panel-setup-v1'
 
@@ -142,7 +142,7 @@ const notifyButtonLabel = computed(() => {
   if (typeof Notification === 'undefined') return 'Alertas indisponíveis'
   if (Notification.permission === 'granted') return 'Alertas ativos'
   if (Notification.permission === 'denied') return 'Alertas bloqueados'
-  return 'Ativar alertas do navegador'
+  return 'Ativar alertas (também com site fechado)'
 })
 
 function labelTipo(t: TicketRealtimePayload['type']): string {
@@ -191,11 +191,15 @@ function maybeDesktopNotify(payload: TicketRealtimePayload): void {
 async function requestDesktopNotifications(): Promise<void> {
   if (typeof Notification === 'undefined') return
   if (Notification.permission === 'denied') return
+  ablyPushFeedback.value = ''
   try {
     await Notification.requestPermission()
-    if (Notification.permission === 'granted') {
-      persistSetupComplete()
+    if (Notification.permission !== 'granted') {
+      return
     }
+    persistSetupComplete()
+    const r = await syncWebPushSubscription()
+    ablyPushFeedback.value = r.message
   } catch {
     /* noop */
   }

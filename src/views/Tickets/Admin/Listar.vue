@@ -76,7 +76,7 @@
               <td>
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
-                  :class="statusBadgeClass(ticket.status)"
+                  :class="statusBadgeClass(ticket.status, ticket.aguardando_devs_atrasado === true)"
                 >
                   {{ ticket.status?.nome || '-' }}
                 </span>
@@ -102,6 +102,7 @@ interface TicketListRow {
   created_at: string
   sla_primeira_resposta_estourado?: boolean
   sla_primeira_resposta_limite?: string
+  aguardando_devs_atrasado?: boolean
   nome_usuario_externo?: string
   unidade_nome?: string
   unidade_dbname?: string
@@ -146,11 +147,15 @@ const formatDateTime = (value: string) => {
   return date.toLocaleString('pt-BR')
 }
 
-const statusBadgeClass = (status: any) => {
+const statusBadgeClass = (status: { slug?: string } | undefined, aguardandoDevsAtrasado: boolean) => {
   const slug = String(status?.slug || '').toLowerCase()
   if (slug === 'aberto') return 'bg-red-100 text-red-700 animate-pulse'
   if (slug === 'em_atendimento') return 'bg-amber-100 text-amber-700'
   if (slug === 'aguardando_cliente') return 'bg-blue-100 text-blue-700'
+  if (slug === 'aguardando_devs') {
+    const base = 'bg-orange-600 text-white dark:bg-orange-600 dark:text-white'
+    return aguardandoDevsAtrasado ? `${base} animate-pulse` : base
+  }
   if (slug === 'resolvido') return 'bg-emerald-100 text-emerald-700'
   if (slug === 'fechado') return 'bg-gray-100 text-gray-700'
   return 'bg-gray-100 text-gray-700'
