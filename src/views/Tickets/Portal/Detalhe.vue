@@ -67,12 +67,35 @@
         <textarea
           v-model="mensagem"
           rows="4"
-          class="w-full rounded-lg border p-3"
+          class="w-full rounded-lg border p-3 disabled:cursor-not-allowed disabled:bg-gray-100"
           placeholder="Sua mensagem"
+          :disabled="respostaEnviando"
           @paste="onPasteResposta"
         />
         <PortalTicketAnexos ref="anexosRespostaRef" v-model="pendingReplyAttachments" />
-        <button class="mt-3 rounded bg-gray-700 px-3 py-2 text-white" @click="responder">Responder</button>
+        <button
+          type="button"
+          class="mt-3 inline-flex items-center justify-center gap-2 rounded bg-gray-700 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-75"
+          :disabled="respostaEnviando"
+          @click="responder"
+        >
+          <svg
+            v-if="respostaEnviando"
+            class="h-4 w-4 shrink-0 animate-spin text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          {{ respostaEnviando ? 'Salvando e enviando e-mail' : 'Responder' }}
+        </button>
       </div>
     </div>
   </portal-layout>
@@ -93,6 +116,7 @@ const mensagem = ref('')
 const respostasOrdenadas = ref<any[]>([])
 const pendingReplyAttachments = ref<File[]>([])
 const anexosRespostaRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
+const respostaEnviando = ref(false)
 
 const anexosAbertura = computed(() => {
   const list = ticket.value?.anexos_abertura
@@ -150,7 +174,8 @@ const onPasteResposta = (e: ClipboardEvent) => {
 }
 
 const responder = async () => {
-  if (!mensagem.value.trim()) return
+  if (respostaEnviando.value || !mensagem.value.trim()) return
+  respostaEnviando.value = true
   try {
     const { data } = await ticketsPortalService.responder(Number(route.params.id), mensagem.value)
     const respostaId = Number(data.id)
@@ -167,6 +192,8 @@ const responder = async () => {
     router.push('/portal/tickets')
   } catch {
     ElMessage.error('Não foi possível enviar a mensagem.')
+  } finally {
+    respostaEnviando.value = false
   }
 }
 

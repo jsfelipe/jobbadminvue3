@@ -80,12 +80,11 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketsAdminService } from '@/services/tickets-admin'
 import { prioridadeSelectLabel } from '@/utils/ticket-prioridade-label'
+import { ticketsBus, type TicketRealtimePayload } from '@/lib/tickets-bus'
 
 const tickets = ref<any[]>([])
 const meta = reactive({ status: [], prioridades: [], categorias: [] } as any)
 const filtro = reactive({ q: '', id_status: '', id_prioridade: '', id_categoria: '' })
-const ultimoEvento = ref('')
-let pollingId: number | null = null
 
 const prioridadeFiltroSelecionada = computed(() => {
   if (filtro.id_prioridade === '' || filtro.id_prioridade === null || filtro.id_prioridade === undefined) {
@@ -133,54 +132,20 @@ const carregar = async () => {
   tickets.value = data.data || []
 }
 
-const tocarSino = () => {
-  try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
-    if (!AudioCtx) return
-    const ctx = new AudioCtx()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = 'triangle'
-    osc.frequency.setValueAtTime(880, ctx.currentTime)
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35)
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start()
-    osc.stop(ctx.currentTime + 0.35)
-  } catch (e) {
-    // noop
-  }
-}
-
-const checarAtualizacoes = async (inicial = false) => {
-  const { data } = await ticketsAdminService.updates(ultimoEvento.value || undefined)
-  if (!inicial && data.has_updates) {
-    tocarSino()
-    await carregar()
-  }
-  if (data.latest_event_at) {
-    ultimoEvento.value = data.latest_event_at
-  }
+const onTicketRealtime = (_p: TicketRealtimePayload) => {
+  void carregar()
 }
 
 onMounted(async () => {
+  ticketsBus.on('tickets:realtime', onTicketRealtime)
   const metaResp = await ticketsAdminService.meta()
   meta.status = metaResp.data.status || []
   meta.prioridades = metaResp.data.prioridades || []
   meta.categorias = metaResp.data.categorias || []
   await carregar()
-  await checarAtualizacoes(true)
-  pollingId = window.setInterval(() => {
-    checarAtualizacoes(false)
-  }, 30000)
 })
 
 onUnmounted(() => {
-  if (pollingId) {
-    window.clearInterval(pollingId)
-    pollingId = null
-  }
+  ticketsBus.off('tickets:realtime', onTicketRealtime)
 })
 </script>

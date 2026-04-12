@@ -88,14 +88,37 @@
         </div>
         <textarea
           v-model="mensagem"
-          class="w-full rounded-lg border p-3"
+          class="w-full rounded-lg border p-3 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-900"
           rows="4"
           placeholder="Resposta"
+          :disabled="respostaEnviando"
           @paste="onPasteResposta"
         />
         <PortalTicketAnexos ref="anexosRespostaRef" v-model="pendingReplyAttachments" />
         <div class="mt-3 flex gap-2">
-          <button class="rounded bg-blue-600 px-3 py-2 text-white" @click="responder">Responder</button>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded bg-blue-600 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-75"
+            :disabled="respostaEnviando"
+            @click="responder"
+          >
+            <svg
+              v-if="respostaEnviando"
+              class="h-4 w-4 shrink-0 animate-spin text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            {{ respostaEnviando ? 'Salvando e enviando e-mail' : 'Responder' }}
+          </button>
         </div>
       </div>
     </div>
@@ -103,12 +126,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PortalTicketAnexos from '@/components/tickets/PortalTicketAnexos.vue'
 import { ticketsAdminService } from '@/services/tickets-admin'
+import { ticketsBus, type TicketRealtimePayload } from '@/lib/tickets-bus'
 
 interface TicketRespostaItem {
   id: number
@@ -141,6 +165,7 @@ const pendingReplyAttachments = ref<File[]>([])
 const anexosRespostaRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
 const statusSelecionado = ref<string | number>('')
 const statusOptions = ref<{ id: number; nome: string }[]>([])
+const respostaEnviando = ref(false)
 
 const empresaSolicitante = computed(() => {
   const t = ticket.value
@@ -197,7 +222,8 @@ const onPasteResposta = (e: ClipboardEvent) => {
 }
 
 const responder = async () => {
-  if (!mensagem.value.trim()) return
+  if (respostaEnviando.value || !mensagem.value.trim()) return
+  respostaEnviando.value = true
   try {
     const { data } = await ticketsAdminService.responder(Number(route.params.id), mensagem.value)
     const respostaId = Number(data.id)
@@ -213,6 +239,8 @@ const responder = async () => {
     await carregar()
   } catch {
     ElMessage.error('Não foi possível enviar a resposta.')
+  } finally {
+    respostaEnviando.value = false
   }
 }
 
@@ -229,9 +257,22 @@ const alterarStatus = async () => {
   await carregar()
 }
 
+const ticketId = computed(() => Number(route.params.id))
+
+const onTicketRealtime = (p: TicketRealtimePayload) => {
+  if (p.ticket_id === ticketId.value) {
+    void carregar()
+  }
+}
+
 onMounted(async () => {
+  ticketsBus.on('tickets:realtime', onTicketRealtime)
   const { data } = await ticketsAdminService.meta()
   statusOptions.value = data.status || []
   await carregar()
+})
+
+onUnmounted(() => {
+  ticketsBus.off('tickets:realtime', onTicketRealtime)
 })
 </script>

@@ -7,9 +7,6 @@ export const ticketsAdminService = {
   dashboard() {
     return api.get('/tickets/dashboard/resumo')
   },
-  updates(since?: string) {
-    return api.get('/tickets/updates', { params: { since } })
-  },
   pendingSupportCount() {
     return api.get('/tickets/pending-support-count')
   },

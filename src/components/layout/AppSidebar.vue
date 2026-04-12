@@ -272,6 +272,7 @@ import { useSidebar } from "@/composables/useSidebar";
 import { useMenuSidebar } from "@/composables/useMenuSidebar";
 import { useStore } from "vuex";
 import { ticketsAdminService } from "@/services/tickets-admin";
+import { ticketsBus } from "@/lib/tickets-bus";
 
 const route = useRoute();
 const router = useRouter();
@@ -346,11 +347,13 @@ const loadPendingSupportCount = async () => {
 };
 
 onMounted(async () => {
+  ticketsBus.on("tickets:pending-refresh", loadPendingSupportCount);
   await loadPendingSupportCount();
-  pendingIntervalId = window.setInterval(loadPendingSupportCount, 30000);
+  pendingIntervalId = window.setInterval(loadPendingSupportCount, 180000);
 });
 
 onUnmounted(() => {
+  ticketsBus.off("tickets:pending-refresh", loadPendingSupportCount);
   if (pendingIntervalId) {
     window.clearInterval(pendingIntervalId);
     pendingIntervalId = null;
