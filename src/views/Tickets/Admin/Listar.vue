@@ -45,7 +45,22 @@
           <tbody>
             <tr v-for="ticket in tickets" :key="ticket.id" class="border-t">
               <td>{{ ticket.id }}</td>
-              <td>{{ formatDateTime(ticket.created_at) }}</td>
+              <td>
+                <span
+                  :class="
+                    ticket.sla_primeira_resposta_estourado
+                      ? 'inline-flex rounded px-1.5 py-0.5 font-semibold text-red-600 animate-pulse dark:text-red-400'
+                      : ''
+                  "
+                  :title="
+                    ticket.sla_primeira_resposta_limite
+                      ? `Prazo 1ª resposta: ${formatDateTime(ticket.sla_primeira_resposta_limite)}`
+                      : undefined
+                  "
+                >
+                  {{ formatDateTime(ticket.created_at) }}
+                </span>
+              </td>
               <td>{{ ticket.nome_usuario_externo || '-' }}</td>
               <td>{{ ticket.unidade_nome || ticket.unidade_dbname || '-' }}</td>
               <td>{{ ticket.titulo }}</td>
@@ -82,7 +97,21 @@ import { ticketsAdminService } from '@/services/tickets-admin'
 import { prioridadeSelectLabel } from '@/utils/ticket-prioridade-label'
 import { ticketsBus, type TicketRealtimePayload } from '@/lib/tickets-bus'
 
-const tickets = ref<any[]>([])
+interface TicketListRow {
+  id: number
+  created_at: string
+  sla_primeira_resposta_estourado?: boolean
+  sla_primeira_resposta_limite?: string
+  nome_usuario_externo?: string
+  unidade_nome?: string
+  unidade_dbname?: string
+  titulo: string
+  descricao: string
+  prioridade?: { nome?: string; cor?: string }
+  status?: { nome?: string; slug?: string }
+}
+
+const tickets = ref<TicketListRow[]>([])
 const meta = reactive({ status: [], prioridades: [], categorias: [] } as any)
 const filtro = reactive({ q: '', id_status: '', id_prioridade: '', id_categoria: '' })
 
