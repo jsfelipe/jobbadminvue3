@@ -118,7 +118,10 @@ const buscarClientes = () => {
       clientes.value = []
       return
     }
-    const { data } = await clienteService.autocomplete(termo)
+    const { data } = await clienteService.autocomplete(termo, {
+      tipo_cliente: 'C',
+      sem_filtro_responsavel: '1',
+    })
     clientes.value = data || []
   }, 250)
 }
