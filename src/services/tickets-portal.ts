@@ -39,6 +39,9 @@ export const ticketsPortalService = {
   responder(id: number, mensagem: string) {
     return portalApi.post(`/portal/tickets/${id}/responder`, { mensagem })
   },
+  reabrir(id: number) {
+    return portalApi.post(`/portal/tickets/${id}/reabrir`)
+  },
   uploadAnexo(ticketId: number, file: File, idTicketResposta?: number | null) {
     const fd = new FormData()
     fd.append('arquivo', file)

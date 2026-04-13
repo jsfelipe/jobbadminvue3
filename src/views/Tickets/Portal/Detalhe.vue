@@ -44,7 +44,12 @@
               <p class="font-semibold text-gray-800">
                 {{ item.autor_tipo === 'atendente' ? 'Atendimento' : 'Cliente' }}
               </p>
-              <p class="mt-1 whitespace-pre-line text-gray-700">{{ item.mensagem }}</p>
+              <div
+                v-if="item.autor_tipo === 'atendente' && item.html_formatado"
+                class="ticket-msg-html mt-1 break-words text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                v-html="item.mensagem"
+              />
+              <p v-else class="mt-1 whitespace-pre-line text-gray-700">{{ item.mensagem }}</p>
               <ul v-if="anexosDaResposta(item).length" class="mt-2 space-y-1 border-t border-gray-200 pt-2 text-sm">
                 <li
                   v-for="ax in anexosDaResposta(item)"
@@ -69,14 +74,18 @@
           rows="4"
           class="w-full rounded-lg border p-3 disabled:cursor-not-allowed disabled:bg-gray-100"
           placeholder="Sua mensagem"
-          :disabled="respostaEnviando"
+          :disabled="respostaEnviando || isFinalizadoOuFechado"
           @paste="onPasteResposta"
         />
-        <PortalTicketAnexos ref="anexosRespostaRef" v-model="pendingReplyAttachments" />
+        <PortalTicketAnexos
+          v-if="!isFinalizadoOuFechado"
+          ref="anexosRespostaRef"
+          v-model="pendingReplyAttachments"
+        />
         <button
           type="button"
           class="mt-3 inline-flex items-center justify-center gap-2 rounded bg-gray-700 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-75"
-          :disabled="respostaEnviando"
+          :disabled="respostaEnviando || isFinalizadoOuFechado"
           @click="responder"
         >
           <svg
@@ -96,6 +105,30 @@
           </svg>
           {{ respostaEnviando ? 'Salvando e enviando e-mail' : 'Responder' }}
         </button>
+
+        <div v-if="mostrarPerguntaReabertura" class="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+          <p class="text-sm font-semibold text-gray-800">
+            Este ticket foi finalizado ou fechado pelo atendimento. Deseja reabrir?
+          </p>
+          <div class="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              class="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-70"
+              :disabled="reabrindoTicket"
+              @click="reabrirTicket"
+            >
+              {{ reabrindoTicket ? 'Reabrindo...' : 'SIM' }}
+            </button>
+            <button
+              type="button"
+              class="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              :disabled="reabrindoTicket"
+              @click="dispensarReabertura"
+            >
+              NÃO
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </portal-layout>
@@ -109,14 +142,25 @@ import PortalLayout from '@/components/layout/PortalLayout.vue'
 import PortalTicketAnexos from '@/components/tickets/PortalTicketAnexos.vue'
 import { ticketsPortalService } from '@/services/tickets-portal'
 
+interface TicketPortalResposta {
+  id: number
+  autor_tipo: string
+  mensagem: string
+  html_formatado?: boolean
+  created_at: string
+  anexos?: { id: number; nome_original: string }[]
+}
+
 const route = useRoute()
 const router = useRouter()
 const ticket = ref<any>(null)
 const mensagem = ref('')
-const respostasOrdenadas = ref<any[]>([])
+const respostasOrdenadas = ref<TicketPortalResposta[]>([])
 const pendingReplyAttachments = ref<File[]>([])
 const anexosRespostaRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
 const respostaEnviando = ref(false)
+const reabrindoTicket = ref(false)
+const ocultarPerguntaReabertura = ref(false)
 
 const anexosAbertura = computed(() => {
   const list = ticket.value?.anexos_abertura
@@ -127,6 +171,15 @@ const anexosDaResposta = (item: { anexos?: unknown }) => {
   const list = item?.anexos
   return Array.isArray(list) ? list : []
 }
+
+const isFinalizadoOuFechado = computed(() => {
+  const slug = String(ticket.value?.status?.slug || '').toLowerCase()
+  return slug === 'fechado' || slug === 'resolvido'
+})
+
+const mostrarPerguntaReabertura = computed(() => {
+  return isFinalizadoOuFechado.value && !ocultarPerguntaReabertura.value
+})
 
 const carregar = async () => {
   try {
@@ -140,7 +193,7 @@ const carregar = async () => {
     }
     ticket.value = t
     const respostas = Array.isArray(t.respostas) ? t.respostas : []
-    respostasOrdenadas.value = [...respostas].sort((a: any, b: any) =>
+    respostasOrdenadas.value = [...respostas].sort((a, b) =>
       String(a.created_at).localeCompare(String(b.created_at))
     )
   } catch {
@@ -174,7 +227,7 @@ const onPasteResposta = (e: ClipboardEvent) => {
 }
 
 const responder = async () => {
-  if (respostaEnviando.value || !mensagem.value.trim()) return
+  if (respostaEnviando.value || !mensagem.value.trim() || isFinalizadoOuFechado.value) return
   respostaEnviando.value = true
   try {
     const { data } = await ticketsPortalService.responder(Number(route.params.id), mensagem.value)
@@ -197,10 +250,30 @@ const responder = async () => {
   }
 }
 
+const reabrirTicket = async () => {
+  if (reabrindoTicket.value || !ticket.value?.id) return
+  reabrindoTicket.value = true
+  try {
+    await ticketsPortalService.reabrir(Number(ticket.value.id))
+    ocultarPerguntaReabertura.value = true
+    ElMessage.success('Ticket reaberto para Aguardando suporte.')
+    await carregar()
+  } catch {
+    ElMessage.error('Não foi possível reabrir o ticket.')
+  } finally {
+    reabrindoTicket.value = false
+  }
+}
+
+const dispensarReabertura = () => {
+  ocultarPerguntaReabertura.value = true
+}
+
 onMounted(carregar)
 watch(
   () => route.params.id,
   () => {
+    ocultarPerguntaReabertura.value = false
     carregar()
   }
 )

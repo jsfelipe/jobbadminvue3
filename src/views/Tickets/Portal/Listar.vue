@@ -28,16 +28,17 @@
 
       <div class="rounded-lg bg-white p-4 shadow-sm">
         <h2 class="mb-3 text-lg font-semibold">Novo chamado</h2>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input v-model="form.assunto" class="rounded-lg border px-3 py-2" placeholder="Assunto" />
-          <input v-model="form.email_contato" class="rounded-lg border px-3 py-2" placeholder="E-mail" />
-          <select v-model="form.id_prioridade" class="rounded-lg border px-3 py-2">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <input v-model="form.assunto" required class="rounded-lg border px-3 py-2" placeholder="Assunto" />
+          <input v-model="form.email_contato" required class="rounded-lg border px-3 py-2" placeholder="E-mail" />
+          <input v-model="form.celular_contato" class="rounded-lg border px-3 py-2" placeholder="Celular" />
+          <select v-model="form.id_prioridade" required class="rounded-lg border px-3 py-2">
             <option value="">Prioridade</option>
             <option v-for="item in meta.prioridades" :key="item.id" :value="item.id">
               {{ prioridadeSelectLabel(item) }}
             </option>
           </select>
-          <select v-model="form.id_categoria" class="rounded-lg border px-3 py-2">
+          <select v-model="form.id_categoria" required class="rounded-lg border px-3 py-2">
             <option value="">Categoria</option>
             <option v-for="item in meta.categorias" :key="item.id" :value="item.id">{{ item.nome }}</option>
           </select>
@@ -53,6 +54,7 @@
         <textarea
           v-model="form.descricao"
           rows="4"
+          required
           class="mt-3 w-full rounded-lg border p-3"
           placeholder="Descrição"
           @paste="onPasteDescricao"
@@ -114,7 +116,14 @@ const sessao = reactive({
   unidade_dbname: '',
 })
 const meta = reactive({ prioridades: [], categorias: [] } as any)
-const form = reactive({ assunto: '', descricao: '', email_contato: '', id_prioridade: '', id_categoria: '' })
+const form = reactive({
+  assunto: '',
+  descricao: '',
+  email_contato: '',
+  celular_contato: '',
+  id_prioridade: '',
+  id_categoria: '',
+})
 const pendingAttachments = ref<File[]>([])
 const anexosRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
 const abrindoTicket = ref(false)
@@ -176,12 +185,21 @@ const onPasteDescricao = (e: ClipboardEvent) => {
 
 const criar = async () => {
   if (abrindoTicket.value) return
+  if (!form.assunto.trim() || !form.email_contato.trim() || !form.descricao.trim()) {
+    ElMessage.error('Preencha assunto, e-mail e descrição.')
+    return
+  }
+  if (form.id_prioridade === '' || form.id_categoria === '') {
+    ElMessage.error('Selecione prioridade e categoria.')
+    return
+  }
   abrindoTicket.value = true
   try {
     const { data } = await ticketsPortalService.criar({
       titulo: form.assunto,
       descricao: form.descricao,
       email_contato: form.email_contato,
+      celular_contato: form.celular_contato,
       id_prioridade: form.id_prioridade,
       id_categoria: form.id_categoria,
     })
@@ -196,6 +214,7 @@ const criar = async () => {
     pendingAttachments.value = []
     form.assunto = ''
     form.descricao = ''
+    form.celular_contato = ''
     ElMessage.success('Ticket aberto com sucesso.')
     await carregar()
   } catch {
@@ -215,15 +234,25 @@ onMounted(async () => {
     if (handoffPayload.email) {
       form.email_contato = String(handoffPayload.email)
     }
+    if (handoffPayload.celular) {
+      form.celular_contato = String(handoffPayload.celular)
+    } else if (handoffPayload.telefone) {
+      form.celular_contato = String(handoffPayload.telefone)
+    }
   }
 
   if (handoff) {
     const { data } = await ticketsPortalService.exchange(handoff)
     localStorage.setItem('auth-portal', data.portal_token)
     localStorage.setItem('portal-ticket-user', JSON.stringify(data.user || {}))
-    const u = data.user as { email?: string } | undefined
+    const u = data.user as { email?: string; celular?: string; telefone?: string } | undefined
     if (u?.email) {
       form.email_contato = String(u.email)
+    }
+    if (u?.celular) {
+      form.celular_contato = String(u.celular)
+    } else if (u?.telefone) {
+      form.celular_contato = String(u.telefone)
     }
     router.replace('/portal/tickets')
   }
@@ -239,12 +268,19 @@ onMounted(async () => {
         unidade_nome?: string
         unidade_dbname?: string
         email?: string
+        celular?: string
+        telefone?: string
       }
       sessao.nome_usuario = local.nome || ''
       sessao.unidade_nome = local.unidade_nome || ''
       sessao.unidade_dbname = local.unidade_dbname || ''
       if (local.email) {
         form.email_contato = String(local.email)
+      }
+      if (local.celular) {
+        form.celular_contato = String(local.celular)
+      } else if (local.telefone) {
+        form.celular_contato = String(local.telefone)
       }
     } catch (e) {
       // noop
@@ -258,6 +294,11 @@ onMounted(async () => {
     sessao.unidade_dbname = meResp.data.unidade_dbname || sessao.unidade_dbname
     if (meResp.data.email) {
       form.email_contato = String(meResp.data.email)
+    }
+    if (meResp.data.celular) {
+      form.celular_contato = String(meResp.data.celular)
+    } else if (meResp.data.telefone) {
+      form.celular_contato = String(meResp.data.telefone)
     }
   } catch (e) {
     // mantém fallback local
