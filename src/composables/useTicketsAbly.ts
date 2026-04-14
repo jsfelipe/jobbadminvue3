@@ -104,7 +104,7 @@ function parseTicketRealtimePayload(raw: unknown): TicketRealtimePayload | null 
   if (!data || typeof data !== 'object') return null
   const o = data as Record<string, unknown>
   const type = o.type
-  if (type !== 'ticket_created' && type !== 'client_reply') return null
+  if (type !== 'ticket_created' && type !== 'client_reply' && type !== 'ticket_responsavel_changed') return null
 
   const tid = o.ticket_id
   let ticketId: number
