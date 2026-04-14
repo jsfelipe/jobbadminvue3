@@ -27,9 +27,75 @@
             {{ formatDateTime(ticket?.created_at ?? '') }}</span
           >
         </p>
+        <div class="mt-3 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-900/40">
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Responsável</p>
+            <div v-if="!ticket?.atendente" class="mt-1 text-sm text-gray-600 dark:text-gray-400">Sem responsável</div>
+            <div v-else class="mt-1 flex items-center gap-2">
+              <img
+                v-if="ticket.atendente.avatar_url"
+                :src="ticket.atendente.avatar_url"
+                :alt="ticket.atendente.nome"
+                class="h-9 w-9 shrink-0 rounded-full object-cover"
+              />
+              <div
+                v-else
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-800 dark:bg-gray-600 dark:text-gray-100"
+              >
+                {{ iniciaisAtendente(ticket.atendente.nome) }}
+              </div>
+              <span class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ ticket.atendente.nome }}</span>
+            </div>
+          </div>
+          <div class="flex min-w-[12rem] flex-1 flex-col gap-1 sm:max-w-xs">
+            <label class="text-xs font-semibold text-gray-600 dark:text-gray-400" for="responsavel-select">Alterar responsável</label>
+            <select
+              id="responsavel-select"
+              v-model="responsavelSelecionado"
+              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800"
+              :disabled="salvandoResponsavel"
+            >
+              <option value="">Sem responsável</option>
+              <option v-for="a in atendentesOptions" :key="a.id_usuarios" :value="String(a.id_usuarios)">
+                {{ a.nome }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="rounded bg-gray-800 px-3 py-1.5 text-xs text-white disabled:opacity-70 dark:bg-gray-700"
+              :disabled="salvandoResponsavel"
+              @click="salvarResponsavel"
+            >
+              {{ salvandoResponsavel ? 'Salvando…' : 'Salvar responsável' }}
+            </button>
+          </div>
+        </div>
         <p class="mt-2 text-sm">
           <span class="font-semibold">Assunto:</span> {{ ticket?.titulo }}
         </p>
+        <div class="mt-2 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+          <p>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">Email:</span>
+            {{ ticket?.email_contato || '—' }}
+          </p>
+          <div class="flex items-center gap-2">
+            <label class="font-semibold text-gray-900 dark:text-gray-100">Celular:</label>
+            <input
+              v-model="celularContato"
+              class="w-full rounded border px-2 py-1 text-sm"
+              placeholder="Celular"
+              :disabled="salvandoContato"
+            />
+            <button
+              type="button"
+              class="rounded bg-gray-700 px-2 py-1 text-xs text-white disabled:opacity-70"
+              :disabled="salvandoContato"
+              @click="salvarContato"
+            >
+              {{ salvandoContato ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
+        </div>
         <p class="mt-2 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
           <span class="font-semibold text-gray-900 dark:text-gray-100">Texto completo:</span>
           {{ ticket?.descricao }}
@@ -204,17 +270,28 @@ interface TicketRespostaItem {
   anexos?: { id: number; nome_original: string }[]
 }
 
+interface AtendenteMeta {
+  id_usuarios: number
+  nome: string
+  email?: string
+  avatar_url?: string | null
+}
+
 interface AdminTicketDetalhe {
   id: number
   titulo: string
   descricao: string
   created_at: string
+  email_contato?: string | null
+  celular_contato?: string | null
   nome_usuario_externo?: string | null
   unidade_nome?: string | null
   unidade_sigla?: string | null
   unidade_dbname?: string | null
   id_status?: number
+  id_atendente_responsavel?: number | null
   aguardando_devs_atrasado?: boolean
+  atendente?: AtendenteMeta | null
   anexos_abertura?: { id: number; nome_original: string }[]
   respostas?: TicketRespostaItem[]
 }
@@ -224,12 +301,17 @@ const ticket = ref<AdminTicketDetalhe | null>(null)
 const mensagem = ref('')
 const comentarioInterno = ref('')
 const comentarioInternoEnviando = ref(false)
+const celularContato = ref('')
+const salvandoContato = ref(false)
 const respostasOrdenadas = ref<TicketRespostaItem[]>([])
 const pendingReplyAttachments = ref<File[]>([])
 const anexosRespostaRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
 const statusSelecionado = ref<string | number>('')
 const statusOptions = ref<{ id: number; nome: string }[]>([])
 const respostaEnviando = ref(false)
+const atendentesOptions = ref<AtendenteMeta[]>([])
+const responsavelSelecionado = ref('')
+const salvandoResponsavel = ref(false)
 
 const empresaSolicitante = computed(() => {
   const t = ticket.value
@@ -252,6 +334,16 @@ const anexosDaResposta = (item: { anexos?: unknown }) => {
   return Array.isArray(list) ? list : []
 }
 
+const iniciaisAtendente = (nome: string) => {
+  const parts = String(nome || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 const bubbleClassResposta = (r: TicketRespostaItem) => {
   if (r.interno) {
     return 'mr-auto border border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
@@ -265,7 +357,10 @@ const bubbleClassResposta = (r: TicketRespostaItem) => {
 const carregar = async () => {
   const { data } = await ticketsAdminService.detalhe(Number(route.params.id))
   ticket.value = data.ticket
+  celularContato.value = String(data.ticket?.celular_contato || '')
   statusSelecionado.value = data.ticket?.id_status || ''
+  const rid = data.ticket?.id_atendente_responsavel
+  responsavelSelecionado.value = rid != null && rid !== '' ? String(rid) : ''
   const respostas = Array.isArray(data.ticket?.respostas) ? data.ticket.respostas : []
   respostasOrdenadas.value = [...respostas].sort((a, b) =>
     String(a.created_at).localeCompare(String(b.created_at))
@@ -352,6 +447,40 @@ const alterarStatus = async () => {
   await carregar()
 }
 
+const salvarResponsavel = async () => {
+  if (!ticket.value?.id || salvandoResponsavel.value) return
+  salvandoResponsavel.value = true
+  try {
+    const raw = responsavelSelecionado.value
+    const idAtendente = raw === '' ? null : Number(raw)
+    await ticketsAdminService.atualizar(Number(ticket.value.id), {
+      id_atendente_responsavel: idAtendente,
+    })
+    await carregar()
+    ElMessage.success('Responsável atualizado.')
+  } catch {
+    ElMessage.error('Não foi possível atualizar o responsável.')
+  } finally {
+    salvandoResponsavel.value = false
+  }
+}
+
+const salvarContato = async () => {
+  if (!ticket.value?.id || salvandoContato.value) return
+  salvandoContato.value = true
+  try {
+    await ticketsAdminService.atualizar(Number(ticket.value.id), {
+      celular_contato: celularContato.value || null,
+    })
+    await carregar()
+    ElMessage.success('Contato atualizado.')
+  } catch {
+    ElMessage.error('Não foi possível atualizar o celular.')
+  } finally {
+    salvandoContato.value = false
+  }
+}
+
 const ticketId = computed(() => Number(route.params.id))
 
 const onTicketRealtime = (p: TicketRealtimePayload) => {
@@ -364,6 +493,7 @@ onMounted(async () => {
   ticketsBus.on('tickets:realtime', onTicketRealtime)
   const { data } = await ticketsAdminService.meta()
   statusOptions.value = data.status || []
+  atendentesOptions.value = Array.isArray(data.atendentes) ? data.atendentes : []
   await carregar()
 })
 
