@@ -1,7 +1,7 @@
 import mitt from 'mitt'
 
 export interface TicketRealtimePayload {
-  type: 'ticket_created' | 'client_reply'
+  type: 'ticket_created' | 'client_reply' | 'ticket_responsavel_changed'
   ticket_id: number
   titulo: string
   preview: string | null

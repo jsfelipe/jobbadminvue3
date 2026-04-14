@@ -146,7 +146,9 @@ const notifyButtonLabel = computed(() => {
 })
 
 function labelTipo(t: TicketRealtimePayload['type']): string {
-  return t === 'ticket_created' ? 'Novo ticket' : 'Resposta do cliente'
+  if (t === 'ticket_created') return 'Novo ticket'
+  if (t === 'ticket_responsavel_changed') return 'Responsável alterado'
+  return 'Resposta do cliente'
 }
 
 function unidadeLabel(p: TicketRealtimePayload): string {
