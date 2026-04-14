@@ -39,7 +39,7 @@
         <table class="w-full text-sm [&_td]:px-5 [&_td]:py-2.5 [&_th]:px-5 [&_th]:py-2.5">
           <thead>
             <tr class="text-left">
-              <th>ID</th><th>Data/Hora</th><th>Usuário</th><th>Unidade</th><th>Assunto</th><th>Msg</th><th>Prioridade</th><th>Status</th><th>Ação</th>
+              <th>ID</th><th>Data/Hora</th><th>Usuário</th><th>Unidade</th><th>Assunto</th><th>Msg</th><th>Responsável</th><th>Prioridade</th><th>Status</th><th>Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -65,6 +65,24 @@
               <td>{{ ticket.unidade_nome || ticket.unidade_dbname || '-' }}</td>
               <td>{{ ticket.titulo }}</td>
               <td>{{ resumirDescricao(ticket.descricao) }}</td>
+              <td>
+                <div v-if="!ticket.atendente" class="text-gray-500">—</div>
+                <div v-else class="flex items-center gap-2">
+                  <img
+                    v-if="ticket.atendente.avatar_url"
+                    :src="ticket.atendente.avatar_url"
+                    :alt="ticket.atendente.nome"
+                    class="h-8 w-8 shrink-0 rounded-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-700 dark:bg-gray-600 dark:text-gray-100"
+                  >
+                    {{ iniciaisAtendente(ticket.atendente.nome) }}
+                  </div>
+                  <span class="truncate">{{ primeiroNome(ticket.atendente.nome) }}</span>
+                </div>
+              </td>
               <td>
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
@@ -110,6 +128,7 @@ interface TicketListRow {
   descricao: string
   prioridade?: { nome?: string; cor?: string }
   status?: { nome?: string; slug?: string }
+  atendente?: { id_usuarios: number; nome: string; avatar_url?: string | null }
 }
 
 const tickets = ref<TicketListRow[]>([])
@@ -133,6 +152,22 @@ const prioridadeBadgeClass = (cor: string) => {
   if (c === 'yellow') return 'bg-yellow-100 text-yellow-700'
   if (c === 'green') return 'bg-green-100 text-green-700'
   return 'bg-gray-100 text-gray-700'
+}
+
+const primeiroNome = (nome: string) => {
+  const t = String(nome || '').trim()
+  if (!t) return '—'
+  return t.split(/\s+/)[0] || '—'
+}
+
+const iniciaisAtendente = (nome: string) => {
+  const parts = String(nome || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 const resumirDescricao = (descricao: string) => {

@@ -28,6 +28,7 @@
             </div>
           </div>
           <input v-model="form.email_contato" class="rounded-lg border px-3 py-2" placeholder="Email de contato" />
+          <input v-model="form.celular_contato" class="rounded-lg border px-3 py-2" placeholder="Celular (opcional)" />
           <input v-model="form.assunto" class="rounded-lg border px-3 py-2" placeholder="Assunto" />
           <div>
             <select v-model="form.id_prioridade" class="w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
@@ -86,6 +87,7 @@ const form = reactive({
   assunto: '',
   descricao: '',
   email_contato: '',
+  celular_contato: '',
   id_prioridade: '',
   id_categoria: '',
 })
@@ -134,6 +136,7 @@ const selecionarCliente = async (item: any) => {
 
   const resp = await clienteService.listarId(item.id_cliente)
   form.email_contato = resp.data?.email || form.email_contato
+  form.celular_contato = resp.data?.telefone || form.celular_contato
 }
 
 const salvar = async () => {
@@ -142,6 +145,7 @@ const salvar = async () => {
     assunto: form.assunto,
     descricao: form.descricao,
     email_contato: form.email_contato,
+    celular_contato: form.celular_contato || null,
     id_prioridade: Number(form.id_prioridade),
     id_categoria: form.id_categoria ? Number(form.id_categoria) : null,
   })
