@@ -73,10 +73,11 @@
 
       <div class="rounded-lg bg-white p-4 shadow-sm">
         <table class="w-full text-sm">
-          <thead><tr class="text-left"><th>ID</th><th>Assunto</th><th>Prioridade</th><th>Data/Hora</th><th>Status</th><th></th></tr></thead>
+          <thead><tr class="text-left"><th>ID</th><th>Usuário</th><th>Assunto</th><th>Prioridade</th><th>Data/Hora</th><th>Status</th><th></th></tr></thead>
           <tbody>
             <tr v-for="ticket in tickets" :key="ticket.id" class="border-t">
               <td>{{ ticket.id }}</td>
+              <td>{{ ticket.nome_usuario_externo || '-' }}</td>
               <td>{{ ticket.titulo }}</td>
               <td>
                 <span
