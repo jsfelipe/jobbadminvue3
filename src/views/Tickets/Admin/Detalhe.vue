@@ -455,18 +455,27 @@ const sanitizeHtml = (html: string) => {
   return template.innerHTML
 }
 
+const normalizeHref = (value: string) => {
+  const raw = value.trim()
+  if (/^www\./i.test(raw)) return `https://${raw}`
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(raw)) return `mailto:${raw}`
+  return raw
+}
+
 const urlToHtml = (url: string) => {
-  const safeUrl = escapeHtml(url)
-  if (/\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url)) {
-    return `<img src="${safeUrl}" alt="Imagem enviada na conversa" loading="lazy" />`
+  const href = normalizeHref(url)
+  const safeHref = escapeHtml(href)
+  const safeLabel = escapeHtml(url)
+  if (/\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(href)) {
+    return `<img src="${safeHref}" alt="Imagem enviada na conversa" loading="lazy" />`
   }
-  return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`
+  return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`
 }
 
 const linkifyTexto = (mensagem: string) => {
   const escaped = escapeHtml(mensagem)
   const withLinks = escaped.replace(
-    /(https?:\/\/[^\s<>"']+|mailto:[^\s<>"']+|tel:[^\s<>"']+)/gi,
+    /((?:https?:\/\/|www\.)[^\s<>"']+|mailto:[^\s<>"']+|tel:[^\s<>"']+|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/gi,
     (match) => urlToHtml(match)
   )
   return withLinks.replace(/\n/g, '<br>')
@@ -478,7 +487,7 @@ const renderMensagemHtml = (resposta: TicketRespostaItem) => {
   if (resposta.html_formatado || /<\/?[a-z][\s\S]*>/i.test(mensagem)) {
     return sanitizeHtml(mensagem)
   }
-  if (/(https?:\/\/|mailto:|tel:)/i.test(mensagem)) {
+  if (/(https?:\/\/|www\.|mailto:|tel:|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/i.test(mensagem)) {
     return linkifyTexto(mensagem)
   }
   return ''
