@@ -45,9 +45,9 @@
                 {{ item.autor_tipo === 'atendente' ? 'Atendimento' : 'Cliente' }}
               </p>
               <div
-                v-if="item.autor_tipo === 'atendente' && item.html_formatado"
-                class="ticket-msg-html mt-1 break-words text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
-                v-html="item.mensagem"
+                v-if="renderMensagemHtml(item)"
+                class="ticket-msg-html mt-1 break-words text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_img]:mt-2 [&_img]:max-h-72 [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                v-html="renderMensagemHtml(item)"
               />
               <p v-else class="mt-1 whitespace-pre-line text-gray-700">{{ item.mensagem }}</p>
               <ul v-if="anexosDaResposta(item).length" class="mt-2 space-y-1 border-t border-gray-200 pt-2 text-sm">
@@ -69,10 +69,8 @@
         </div>
       </div>
       <div class="rounded-lg bg-white p-4 shadow-sm">
-        <textarea
+        <TicketRichTextarea
           v-model="mensagem"
-          rows="4"
-          class="w-full rounded-lg border p-3 disabled:cursor-not-allowed disabled:bg-gray-100"
           placeholder="Sua mensagem"
           :disabled="respostaEnviando || isFinalizadoOuFechado"
           @paste="onPasteResposta"
@@ -140,6 +138,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PortalLayout from '@/components/layout/PortalLayout.vue'
 import PortalTicketAnexos from '@/components/tickets/PortalTicketAnexos.vue'
+import TicketRichTextarea from '@/components/tickets/TicketRichTextarea.vue'
 import { ticketsPortalService } from '@/services/tickets-portal'
 
 interface TicketPortalResposta {
@@ -180,6 +179,136 @@ const isFinalizadoOuFechado = computed(() => {
 const mostrarPerguntaReabertura = computed(() => {
   return isFinalizadoOuFechado.value && !ocultarPerguntaReabertura.value
 })
+
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+
+const isSafeUrl = (raw: string) => {
+  const value = raw.trim()
+  if (!value) return false
+  if (/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(value)) return true
+  if (/^(https?:|mailto:|tel:)/i.test(value)) return true
+  return false
+}
+
+const sanitizeHtml = (html: string) => {
+  if (typeof window === 'undefined') return escapeHtml(html)
+  const template = document.createElement('template')
+  template.innerHTML = html
+  const allowedTags = new Set([
+    'a',
+    'img',
+    'p',
+    'br',
+    'strong',
+    'em',
+    'b',
+    'i',
+    'u',
+    'ul',
+    'ol',
+    'li',
+    'blockquote',
+    'code',
+    'pre',
+    'span',
+    'div',
+  ])
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT)
+  const toRemove: Element[] = []
+  const allElements: Element[] = []
+  let current = walker.nextNode()
+  while (current) {
+    if (current instanceof Element) {
+      allElements.push(current)
+      if (!allowedTags.has(current.tagName.toLowerCase())) {
+        toRemove.push(current)
+      }
+    }
+    current = walker.nextNode()
+  }
+  for (const el of toRemove) {
+    const parent = el.parentNode
+    if (!parent) continue
+    while (el.firstChild) parent.insertBefore(el.firstChild, el)
+    parent.removeChild(el)
+  }
+  for (const el of allElements) {
+    const tag = el.tagName.toLowerCase()
+    for (const attr of [...el.attributes]) {
+      const name = attr.name.toLowerCase()
+      if (name.startsWith('on') || name === 'style' || name === 'srcset') {
+        el.removeAttribute(attr.name)
+        continue
+      }
+      if (tag === 'a') {
+        if (name !== 'href' && name !== 'target' && name !== 'rel') {
+          el.removeAttribute(attr.name)
+        }
+      } else if (tag === 'img') {
+        if (name !== 'src' && name !== 'alt' && name !== 'title') {
+          el.removeAttribute(attr.name)
+        }
+      } else if (name === 'class' || name === 'id') {
+        el.removeAttribute(attr.name)
+      }
+    }
+    if (tag === 'a') {
+      const href = el.getAttribute('href') ?? ''
+      if (!isSafeUrl(href)) {
+        const parent = el.parentNode
+        if (parent) {
+          while (el.firstChild) parent.insertBefore(el.firstChild, el)
+          parent.removeChild(el)
+        }
+        continue
+      }
+      el.setAttribute('target', '_blank')
+      el.setAttribute('rel', 'noopener noreferrer')
+    }
+    if (tag === 'img') {
+      const src = el.getAttribute('src') ?? ''
+      if (!isSafeUrl(src)) {
+        el.remove()
+      }
+    }
+  }
+  return template.innerHTML
+}
+
+const urlToHtml = (url: string) => {
+  const safeUrl = escapeHtml(url)
+  if (/\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url)) {
+    return `<img src="${safeUrl}" alt="Imagem enviada na conversa" loading="lazy" />`
+  }
+  return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`
+}
+
+const linkifyTexto = (mensagemRaw: string) => {
+  const escaped = escapeHtml(mensagemRaw)
+  const withLinks = escaped.replace(
+    /(https?:\/\/[^\s<>"']+|mailto:[^\s<>"']+|tel:[^\s<>"']+)/gi,
+    (match) => urlToHtml(match)
+  )
+  return withLinks.replace(/\n/g, '<br>')
+}
+
+const renderMensagemHtml = (item: TicketPortalResposta) => {
+  const mensagemRaw = String(item.mensagem || '')
+  if (!mensagemRaw.trim()) return ''
+  if (item.html_formatado || /<\/?[a-z][\s\S]*>/i.test(mensagemRaw)) {
+    return sanitizeHtml(mensagemRaw)
+  }
+  if (/(https?:\/\/|mailto:|tel:)/i.test(mensagemRaw)) {
+    return linkifyTexto(mensagemRaw)
+  }
+  return ''
+}
 
 const carregar = async () => {
   try {
