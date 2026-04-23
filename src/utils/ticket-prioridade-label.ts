@@ -15,6 +15,9 @@ function normalizeSlug(s: string): string {
 function prioridadeSlaTexto(item: TicketPrioridadeOpcao): string {
   const slug = normalizeSlug(String(item.slug || ''))
   const nome = String(item.nome || '')
+  if (slug === 'sugestao' || /sugest[ãa]o/i.test(nome)) {
+    return 'sem prazo de tempo'
+  }
   if (slug === 'urgencia_bug_erro' || /bug/i.test(nome)) {
     return 'respondido em média em até 4h'
   }
@@ -33,6 +36,8 @@ export function prioridadeSelectLabel(item: TicketPrioridadeOpcao): string {
     prefix = '🟡 '
   } else if (cor === 'green') {
     prefix = '🟢 '
+  } else if (cor === 'blue') {
+    prefix = '🔵 '
   }
   const nome = String(item.nome || '')
   const sla = prioridadeSlaTexto(item)

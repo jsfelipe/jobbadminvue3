@@ -108,6 +108,7 @@ const prioridadeBadgeClass = (cor: string) => {
   if (c === 'red') return 'bg-red-100 text-red-700'
   if (c === 'yellow') return 'bg-yellow-100 text-yellow-700'
   if (c === 'green') return 'bg-green-100 text-green-700'
+  if (c === 'blue') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100'
   return 'bg-gray-100 text-gray-700'
 }
 

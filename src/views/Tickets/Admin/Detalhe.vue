@@ -157,19 +157,80 @@
         </div>
       </div>
       <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-        <div class="mb-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-          <select v-model="statusSelecionado" class="rounded border px-3 py-2 text-sm">
-            <option value="">Selecionar status</option>
-            <option v-for="item in statusOptions" :key="item.id" :value="item.id">
-              {{ item.nome }}
-            </option>
-          </select>
-          <button class="rounded bg-amber-600 px-3 py-2 text-white" @click="alterarStatus">
-            Trocar status
-          </button>
-          <button class="rounded bg-red-600 px-3 py-2 text-white" @click="fechar">
-            Finalizar ticket
-          </button>
+        <div class="mb-3 flex flex-wrap items-end gap-2">
+          <div class="min-w-[10rem] flex-1 sm:max-w-[13rem]">
+            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400" for="ticket-admin-status"
+              >Status</label
+            >
+            <select
+              id="ticket-admin-status"
+              v-model="statusSelecionado"
+              class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+            >
+              <option value="">Selecionar</option>
+              <option v-for="item in statusOptions" :key="item.id" :value="item.id">
+                {{ item.nome }}
+              </option>
+            </select>
+          </div>
+          <div class="min-w-[12rem] flex-1 sm:max-w-[20rem]">
+            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400" for="ticket-admin-prioridade"
+              >Prioridade</label
+            >
+            <select
+              id="ticket-admin-prioridade"
+              v-model="prioridadeSelecionada"
+              class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+            >
+              <option value="">Selecionar</option>
+              <option v-for="p in prioridadeOptions" :key="p.id" :value="String(p.id)">
+                {{ prioridadeSelectLabel(p) }}
+              </option>
+            </select>
+          </div>
+          <div class="min-w-[10rem] flex-1 sm:max-w-[16rem]">
+            <label class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400" for="ticket-admin-categoria"
+              >Categoria</label
+            >
+            <select
+              id="ticket-admin-categoria"
+              v-model="categoriaSelecionada"
+              class="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+            >
+              <option value="">Sem categoria</option>
+              <option v-for="c in categoriaOptions" :key="c.id" :value="String(c.id)">
+                {{ c.nome }}
+              </option>
+            </select>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded bg-amber-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-70"
+              :disabled="salvandoClassificacao"
+              @click="salvarClassificacaoTicket"
+            >
+              <svg
+                v-if="salvandoClassificacao"
+                class="h-4 w-4 shrink-0 animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              {{ salvandoClassificacao ? 'Salvando…' : 'Salvar' }}
+            </button>
+            <button type="button" class="rounded bg-red-600 px-3 py-2 text-sm text-white" @click="fechar">
+              Finalizar ticket
+            </button>
+          </div>
         </div>
         <div class="mb-4">
           <label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300"
@@ -257,6 +318,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PortalTicketAnexos from '@/components/tickets/PortalTicketAnexos.vue'
 import TicketRichTextarea from '@/components/tickets/TicketRichTextarea.vue'
 import { ticketsAdminService } from '@/services/tickets-admin'
+import { prioridadeSelectLabel } from '@/utils/ticket-prioridade-label'
 import { ticketsBus, type TicketRealtimePayload } from '@/lib/tickets-bus'
 
 interface TicketRespostaItem {
@@ -289,6 +351,8 @@ interface AdminTicketDetalhe {
   unidade_sigla?: string | null
   unidade_dbname?: string | null
   id_status?: number
+  id_prioridade?: number | null
+  id_categoria?: number | null
   id_atendente_responsavel?: number | null
   aguardando_devs_atrasado?: boolean
   atendente?: AtendenteMeta | null
@@ -308,6 +372,11 @@ const pendingReplyAttachments = ref<File[]>([])
 const anexosRespostaRef = ref<InstanceType<typeof PortalTicketAnexos> | null>(null)
 const statusSelecionado = ref<string | number>('')
 const statusOptions = ref<{ id: number; nome: string }[]>([])
+const prioridadeSelecionada = ref('')
+const categoriaSelecionada = ref('')
+const prioridadeOptions = ref<{ id: number; nome: string; slug?: string; cor?: string }[]>([])
+const categoriaOptions = ref<{ id: number; nome: string; slug?: string }[]>([])
+const salvandoClassificacao = ref(false)
 const respostaEnviando = ref(false)
 const atendentesOptions = ref<AtendenteMeta[]>([])
 const responsavelSelecionado = ref('')
@@ -498,6 +567,14 @@ const carregar = async () => {
   ticket.value = data.ticket
   celularContato.value = String(data.ticket?.celular_contato || '')
   statusSelecionado.value = data.ticket?.id_status || ''
+  prioridadeSelecionada.value =
+    data.ticket?.id_prioridade != null && data.ticket.id_prioridade !== ''
+      ? String(data.ticket.id_prioridade)
+      : ''
+  categoriaSelecionada.value =
+    data.ticket?.id_categoria != null && data.ticket.id_categoria !== ''
+      ? String(data.ticket.id_categoria)
+      : ''
   const rid = data.ticket?.id_atendente_responsavel
   responsavelSelecionado.value = rid != null && rid !== '' ? String(rid) : ''
   const respostas = Array.isArray(data.ticket?.respostas) ? data.ticket.respostas : []
@@ -578,12 +655,30 @@ const fechar = async () => {
   await carregar()
 }
 
-const alterarStatus = async () => {
-  if (!statusSelecionado.value) return
-  await ticketsAdminService.atualizar(Number(route.params.id), {
-    id_status: Number(statusSelecionado.value),
-  })
-  await carregar()
+const salvarClassificacaoTicket = async () => {
+  if (salvandoClassificacao.value) return
+  if (!statusSelecionado.value) {
+    ElMessage.warning('Selecione um status.')
+    return
+  }
+  if (!prioridadeSelecionada.value) {
+    ElMessage.warning('Selecione uma prioridade.')
+    return
+  }
+  salvandoClassificacao.value = true
+  try {
+    await ticketsAdminService.atualizar(Number(route.params.id), {
+      id_status: Number(statusSelecionado.value),
+      id_prioridade: Number(prioridadeSelecionada.value),
+      id_categoria: categoriaSelecionada.value === '' ? null : Number(categoriaSelecionada.value),
+    })
+    await carregar()
+    ElMessage.success('Status, prioridade e categoria atualizados.')
+  } catch {
+    ElMessage.error('Não foi possível atualizar o ticket.')
+  } finally {
+    salvandoClassificacao.value = false
+  }
 }
 
 const salvarResponsavel = async () => {
@@ -632,6 +727,8 @@ onMounted(async () => {
   ticketsBus.on('tickets:realtime', onTicketRealtime)
   const { data } = await ticketsAdminService.meta()
   statusOptions.value = data.status || []
+  prioridadeOptions.value = data.prioridades || []
+  categoriaOptions.value = data.categorias || []
   atendentesOptions.value = Array.isArray(data.atendentes) ? data.atendentes : []
   await carregar()
 })

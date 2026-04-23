@@ -53,9 +53,11 @@
                       : ''
                   "
                   :title="
-                    ticket.sla_primeira_resposta_limite
-                      ? `Prazo 1ª resposta: ${formatDateTime(ticket.sla_primeira_resposta_limite)}`
-                      : undefined
+                    ticket.sla_primeira_resposta_sem_prazo
+                      ? 'Sugestão: sem prazo de primeira resposta'
+                      : ticket.sla_primeira_resposta_limite
+                        ? `Prazo 1ª resposta: ${formatDateTime(ticket.sla_primeira_resposta_limite)}`
+                        : undefined
                   "
                 >
                   {{ formatDateTime(ticket.created_at) }}
@@ -119,6 +121,7 @@ interface TicketListRow {
   id: number
   created_at: string
   sla_primeira_resposta_estourado?: boolean
+  sla_primeira_resposta_sem_prazo?: boolean
   sla_primeira_resposta_limite?: string
   aguardando_devs_atrasado?: boolean
   nome_usuario_externo?: string
@@ -151,6 +154,7 @@ const prioridadeBadgeClass = (cor: string) => {
   if (c === 'red') return 'bg-red-100 text-red-700'
   if (c === 'yellow') return 'bg-yellow-100 text-yellow-700'
   if (c === 'green') return 'bg-green-100 text-green-700'
+  if (c === 'blue') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100'
   return 'bg-gray-100 text-gray-700'
 }
 
