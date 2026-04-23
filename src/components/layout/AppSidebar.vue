@@ -156,6 +156,12 @@
                   >
                     {{ pendingSupportCount }}
                   </span>
+                  <span
+                    v-if="(isExpanded || isHovered || isMobileOpen) && item.name === 'Chat Online' && chatUnreadCount > 0"
+                    class="ml-auto inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white animate-pulse"
+                  >
+                    {{ chatUnreadCount }}
+                  </span>
                 </router-link>
                 <transition
                   @enter="startTransition"
@@ -273,6 +279,8 @@ import { useMenuSidebar } from "@/composables/useMenuSidebar";
 import { useStore } from "vuex";
 import { ticketsAdminService } from "@/services/tickets-admin";
 import { ticketsBus } from "@/lib/tickets-bus";
+import { chatService } from "@/services/chat";
+import { chatBus } from "@/lib/chat-bus";
 
 const route = useRoute();
 const router = useRouter();
@@ -281,7 +289,9 @@ const store = useStore();
 const { isExpanded, isMobileOpen, isHovered, openSubmenu, toggleMobileSidebar } = useSidebar();
 const { menuGroups } = useMenuSidebar();
 const pendingSupportCount = ref(0);
+const chatUnreadCount = ref(0);
 let pendingIntervalId = null;
+let chatIntervalId = null;
 
 
 /** URL do WhatsApp Suporte (mesma lógica do app antigo: host define o número). */
@@ -346,17 +356,34 @@ const loadPendingSupportCount = async () => {
   }
 };
 
+const loadChatUnreadCount = async () => {
+  try {
+    const { data } = await chatService.unreadCount();
+    chatUnreadCount.value = Number(data?.count || 0);
+  } catch (e) {
+    // noop
+  }
+};
+
 onMounted(async () => {
   ticketsBus.on("tickets:pending-refresh", loadPendingSupportCount);
+  chatBus.on("chat:unread-refresh", loadChatUnreadCount);
   await loadPendingSupportCount();
+  await loadChatUnreadCount();
   pendingIntervalId = window.setInterval(loadPendingSupportCount, 180000);
+  chatIntervalId = window.setInterval(loadChatUnreadCount, 180000);
 });
 
 onUnmounted(() => {
   ticketsBus.off("tickets:pending-refresh", loadPendingSupportCount);
+  chatBus.off("chat:unread-refresh", loadChatUnreadCount);
   if (pendingIntervalId) {
     window.clearInterval(pendingIntervalId);
     pendingIntervalId = null;
+  }
+  if (chatIntervalId) {
+    window.clearInterval(chatIntervalId);
+    chatIntervalId = null;
   }
 });
 </script>
