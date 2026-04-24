@@ -35,7 +35,7 @@
           </div>
           <div class="mt-4 flex items-center text-xs text-gray-500 dark:text-gray-400">
             <i :class="stats.footerIcon" class="mr-1"></i>
-            {{ stats.title === 'Vendas Mês Atual' && !isPerfil1 ? 'Primeiros pgts do cliente no mês' : stats.footerText }}
+            {{ stats.footerText }}
           </div>
         </div>
       </div>
@@ -190,7 +190,7 @@
 
           <div v-if="isPerfil1ou6" class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
             <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-              Vendas por mês (Setup + primeira mensalidade)
+              Vendas por mês (Comissão efetivada: Setup + primeira mensalidade)
             </h4>
             <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
               
@@ -560,7 +560,7 @@ const statsCards = ref([
     icon: 'ti-wallet',
     title: 'Vendas Mês Atual',
     value: '',
-    footerText: 'Primeiras transações (setup + 1ª mensalidade)',
+    footerText: 'Efetivado em comissão (setup + 1ª mensalidade)',
     footerIcon: 'ti-reload',
   },
   {
@@ -908,7 +908,7 @@ const chartOptionsPrimeiras = computed(() => ({
 
 const chartSeriesPrimeiras = computed(() => [
   {
-    name: 'Primeiras transações',
+    name: 'Vendas efetivadas',
     data: primeirasData.value,
   },
 ])
@@ -1088,7 +1088,7 @@ const dadosPrimeirasTransacoes = async () => {
     })
     primeirasData.value = mesesComDados
   } catch (error) {
-    console.error('Erro ao carregar primeiras transações:', error)
+    console.error('Erro ao carregar vendas efetivadas:', error)
     primeirasData.value = Array(12).fill(0)
   } finally {
     loadingPrimeiras.value = false
@@ -1232,7 +1232,7 @@ async function carregarDashboard() {
       const total = Number(vendasMesRes.data?.data ?? vendasMesRes.data ?? 0)
       statsCards.value[4].value = 'R$ ' + total.toFixed(2).replace('.', ',')
     } catch (error) {
-      console.error('Erro ao carregar vendas mês atual (primeiras):', error)
+      console.error('Erro ao carregar vendas mês atual (efetivadas):', error)
       statsCards.value[4].value = 'R$ 0,00'
     }
   }

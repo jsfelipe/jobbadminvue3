@@ -61,10 +61,10 @@ export const dashboardAdmin = {
 
   setupAnual: () => cachedGet('setupAnual', '/dashboard/setupanual'),
 
-  primeirasTransacoesAnual: () => cachedGet('primeirasTransacoesAnual', '/dashboard/primeiras-transacoes-anual'),
+  primeirasTransacoesAnual: () => cachedGet('primeirasTransacoesAnualComissaoEfetivada_v2', '/dashboard/primeiras-transacoes-anual'),
 
   primeirasTransacoesMesAtual: () =>
-    cachedGet('primeirasTransacoesMesAtual', '/dashboard/primeiras-transacoes-mes-atual'),
+    cachedGet('primeirasTransacoesMesAtualComissaoEfetivada_v2', '/dashboard/primeiras-transacoes-mes-atual'),
 
   /** Detalhe por mês: ?mes=1&ano=2026. Sem cache. */
   primeirasTransacoesDetalheMes: (mes, ano) =>
