@@ -186,7 +186,7 @@ import { comissaoService } from '@/services/comissao'
 import { api } from '@/services/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const SALARIO_FIXO = 4800
+const SALARIO_FIXO = 5265
 
 const loading = ref(false)
 const salvando = ref(false)
