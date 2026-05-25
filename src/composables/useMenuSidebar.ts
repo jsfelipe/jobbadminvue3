@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   BoxIcon,
   UserGroupIcon,
+  ChatIcon,
 } from '@/icons'
 
 /** Subitem do menu no formato do AppSidebar */
@@ -46,6 +47,7 @@ function iconFromApi(iconStr: string, itemName: string): Component {
   if (lower.includes('chart') || lower.includes('pie') || name === 'RELATÓRIOS' || name === 'EXTRATO MENSAL' || name === 'RELATÓRIO') return PieChartIcon
   if (lower.includes('cog') || lower.includes('setting') || name === 'CONFIGURAÇÕES' || name === 'DESBLOQUEIO') return SettingsIcon
   if (lower.includes('box') || name === 'EQUIPAMENTOS' || name === 'EQUIPAMENTO') return BoxIcon
+  if (name === 'CHAT ONLINE' || lower.includes('chat online')) return ChatIcon
   return CalenderIcon
 }
 
@@ -137,6 +139,7 @@ const defaultMenuItems: MenuItemWithIcon[] = [
   { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato', requiresProfile: [1, 6] },
   { icon: PieChartIcon, name: 'Vendas / Comissão', path: '/admin/vendas/comissao', requiresProfile: [1, 6] },
   { icon: PageIcon, name: 'Tickets', path: '/admin/tickets' },
+  { icon: ChatIcon, name: 'Chat Online', path: '/admin/chat' },
   { icon: SettingsIcon, name: 'Alterar Databases', path: '/admin/query-database', requiresProfile: 1 },
   { icon: UserCircleIcon, name: 'Usuário', path: '/admin/usuarios', requiresProfile: 1 },
 ]

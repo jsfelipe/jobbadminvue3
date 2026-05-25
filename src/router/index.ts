@@ -166,6 +166,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/chat',
+      name: 'admin.chat',
+      component: () => import('../views/Chat/Listar.vue'),
+      meta: {
+        title: 'Chat Online',
+      },
+    },
+    {
       path: '/admin/tickets',
       name: 'admin.tickets',
       component: () => import('../views/Tickets/Admin/Listar.vue'),
