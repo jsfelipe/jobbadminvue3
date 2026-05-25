@@ -1,5 +1,16 @@
 <template>
-  <div class="flex h-[calc(100vh-140px)] min-h-[480px] gap-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+  <div
+    class="relative flex h-[calc(100vh-140px)] min-h-[480px] gap-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+  >
+    <button
+      type="button"
+      class="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      aria-label="Fechar chat"
+      title="Fechar"
+      @click="voltar"
+    >
+      <X class="h-5 w-5" stroke-width="2" />
+    </button>
     <aside
       class="flex w-full max-w-md flex-col border-r border-gray-200 dark:border-gray-700 md:w-[360px]"
     >
@@ -35,11 +46,11 @@
           <div
             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-800 dark:bg-brand-900/40 dark:text-brand-200"
           >
-            {{ initials(c.nome_usuario) }}
+            {{ initials(displayClienteNome(c)) }}
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
-              <span class="truncate font-medium text-gray-900 dark:text-white">{{ c.nome_usuario }}</span>
+              <span class="truncate font-medium text-gray-900 dark:text-white">{{ displayClienteNome(c) }}</span>
               <span
                 v-if="c.unread_count_atendente > 0"
                 class="inline-flex min-w-[22px] shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold text-white"
@@ -48,7 +59,7 @@
               </span>
             </div>
             <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-              {{ c.unidade_nome || c.email }}
+              {{ displayClienteSubtitulo(c) }}
             </p>
             <p class="truncate text-sm text-gray-600 dark:text-gray-300">
               {{ c.last_message_preview || '—' }}
@@ -68,10 +79,10 @@
         >
           <div class="min-w-0">
             <h2 class="truncate font-semibold text-gray-900 dark:text-white">
-              {{ selectedConversa?.nome_usuario || '…' }}
+              {{ selectedConversa ? displayClienteNome(selectedConversa) : '…' }}
             </h2>
             <p class="truncate text-xs text-gray-500">
-              {{ selectedConversa?.email }}
+              {{ selectedConversa ? displayClienteSubtitulo(selectedConversa) : '' }}
               <span v-if="selectedConversa?.nome_atendente"> · {{ selectedConversa.nome_atendente }}</span>
             </p>
           </div>
@@ -173,10 +184,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
+import { X } from 'lucide-vue-next'
 import { chatService, type ChatConversaRow, type ChatMensagemRow } from '@/services/chat'
 import { subscribeConversationChannel, chatAblyConnected } from '@/composables/useChatAbly'
 import { chatBus } from '@/lib/chat-bus'
+import { displayClienteNome, displayClienteSubtitulo } from '@/utils/chat-cliente-label'
 
 interface LoginState {
   data?: { id_usuarios?: number }
@@ -186,8 +200,18 @@ interface RootState {
   Login?: LoginState
 }
 
+const router = useRouter()
+const route = useRoute()
 const store = useStore()
 const rootState = computed(() => store.state as RootState)
+
+function voltar(): void {
+  if (window.history.state?.back != null) {
+    router.back()
+    return
+  }
+  void router.push({ name: 'admin.overview' })
+}
 const myUserId = computed(() => Number(rootState.value.Login?.data?.id_usuarios ?? 0))
 
 const filtro = ref<'todas' | 'minhas' | 'nao_atribuidas' | 'fechadas'>('todas')
@@ -399,10 +423,16 @@ const onLobbyRefresh = () => {
   void loadList()
 }
 
-onMounted(() => {
-  void loadList()
+onMounted(async () => {
+  await loadList()
   chatBus.on('chat:unread-refresh', onLobbyRefresh)
   chatBus.on('chat:lobby', onLobbyRefresh)
+
+  const raw = route.query.conversa
+  const conversaId = Number(Array.isArray(raw) ? raw[0] : raw)
+  if (conversaId > 0) {
+    await selectConversa(conversaId)
+  }
 })
 
 onUnmounted(() => {
