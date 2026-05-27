@@ -166,6 +166,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/query-database/remover-contas-testes',
+      name: 'admin.query-database.remover-contas-testes',
+      component: () => import('../views/QueryDatabase/RemoverContasTestes.vue'),
+      meta: {
+        title: 'Remover contas Testes',
+        requiresProfile: 1,
+      },
+    },
+    {
       path: '/admin/chat',
       name: 'admin.chat',
       component: () => import('../views/Chat/Listar.vue'),
