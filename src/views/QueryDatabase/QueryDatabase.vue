@@ -23,7 +23,7 @@
             class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
           >
             <div class="mb-2 font-medium text-blue-800 dark:text-blue-200">
-              Processando query nas databases selecionadas...
+              {{ mensagemProcessamento }}
             </div>
             <div class="mb-2 h-8 overflow-hidden rounded bg-blue-200 dark:bg-blue-900">
               <div
@@ -33,6 +33,16 @@
                 {{ progressoPercentage }}% ({{ progresso.completed }}/{{ progresso.total }})
               </div>
             </div>
+            <ul
+              v-if="ultimoTipoJob === 'testes' && progresso.results.length > 0"
+              class="mt-2 max-h-48 space-y-1 overflow-y-auto text-sm text-gray-700 dark:text-gray-300"
+            >
+              <li v-for="r in progresso.results" :key="r.id_cliente || r.dbname">
+                <span :class="r.action === 'removed' ? 'text-green-600' : 'text-amber-600'">
+                  {{ r.dbname }}: {{ r.msgDetails }}
+                </span>
+              </li>
+            </ul>
             <div
               v-if="progresso.status === 'completed'"
               class="rounded border border-green-200 bg-green-50 p-2 text-sm text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200"
@@ -96,8 +106,14 @@
           </div>
 
           <div class="flex gap-2">
-            <el-button type="primary" @click="salvar">Salvar</el-button>
-            <el-button type="success" @click="exportarUsuarios">Exportar E-mail dos Usuários</el-button>
+            <el-button type="primary" :disabled="processando" @click="salvar">Salvar</el-button>
+            <el-button type="success" :disabled="processando" @click="exportarUsuarios">
+              Exportar E-mail dos Usuários
+            </el-button>
+            <el-button type="danger" :disabled="processando" @click="removerLogs">Remover Logs</el-button>
+            <el-button type="warning" :disabled="processando" @click="removerContasTestes">
+              Remover contas Testes
+            </el-button>
           </div>
         </form>
       </div>
@@ -109,7 +125,7 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { api } from '@/services/http'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const formData = reactive({
   query: '',
@@ -122,6 +138,9 @@ const checkboxesHtml = ref('')
 const carregando = ref(false)
 const databases = ref({})
 const processando = ref(false)
+const processandoRemoverLogs = ref(false)
+const processandoRemoverTestes = ref(false)
+const ultimoTipoJob = ref('')
 const jobId = ref(null)
 const progresso = reactive({
   total: 0,
@@ -138,6 +157,16 @@ const progressoPercentage = computed(() => {
     return Math.min(Math.round((progresso.completed / progresso.total) * 100), 100)
   }
   return 0
+})
+
+const mensagemProcessamento = computed(() => {
+  if (processandoRemoverTestes.value) {
+    return 'Removendo contas teste elegíveis...'
+  }
+  if (processandoRemoverLogs.value) {
+    return 'Removendo logs nas databases selecionadas...'
+  }
+  return 'Processando query nas databases selecionadas...'
 })
 
 async function carregarDatabases() {
@@ -198,6 +227,15 @@ function getCheckedDatabases() {
   )
 }
 
+function iniciarProcessamentoJob(total) {
+  processando.value = true
+  progresso.total = total
+  progresso.completed = 0
+  progresso.percentage = 0
+  progresso.status = 'processing'
+  progresso.results = []
+}
+
 function salvar() {
   const checkedDatabases = getCheckedDatabases()
   if (checkedDatabases.length === 0) {
@@ -213,12 +251,10 @@ function salvar() {
     return
   }
 
-  processando.value = true
-  progresso.total = checkedDatabases.length
-  progresso.completed = 0
-  progresso.percentage = 0
-  progresso.status = 'processing'
-  progresso.results = []
+  processandoRemoverLogs.value = false
+  processandoRemoverTestes.value = false
+  ultimoTipoJob.value = 'query'
+  iniciarProcessamentoJob(checkedDatabases.length)
 
   const payload = {
     query: formData.query,
@@ -270,6 +306,8 @@ function iniciarPolling() {
     if (pollingInterval) {
       pararPolling()
       processando.value = false
+      processandoRemoverLogs.value = false
+      processandoRemoverTestes.value = false
       ElMessage.warning('Tempo máximo de processamento excedido')
     }
   }, 600000)
@@ -308,10 +346,19 @@ function verificarProgresso() {
         atualizarResultadosNaTela(data.results)
       }
       if (data.status === 'completed') {
+        const tipo = ultimoTipoJob.value
         pararPolling()
         processando.value = false
+        processandoRemoverLogs.value = false
+        processandoRemoverTestes.value = false
         progresso.percentage = 100
-        ElMessage.success('Processamento concluído!')
+        if (tipo === 'testes') {
+          ElMessage.success('Remoção de contas teste concluída!')
+        } else if (tipo === 'logs') {
+          ElMessage.success('Remoção de logs concluída!')
+        } else {
+          ElMessage.success('Processamento concluído!')
+        }
       }
     })
     .catch((error) => {
@@ -319,9 +366,34 @@ function verificarProgresso() {
       if (error.response && error.response.status === 404) {
         pararPolling()
         processando.value = false
+        processandoRemoverLogs.value = false
+        processandoRemoverTestes.value = false
         ElMessage.error('Job não encontrado ou expirado')
       }
     })
+}
+
+function formatarResultadoLinha(line) {
+  if (line.action === 'removed') {
+    return `<span class="query-result" style="color:green"> [CONTA TESTE REMOVIDA] ${line.msgDetails}</span>`
+  }
+  if (line.action === 'skipped') {
+    return `<span class="query-result" style="color:#b45309"> [IGNORADA] ${line.msgDetails}</span>`
+  }
+  if (line.action === 'error') {
+    return `<span class="query-result" style="color:red"> [ERRO] ${line.msgDetails}</span>`
+  }
+  if (line.deleted) {
+    const d = line.deleted
+    if (line.status) {
+      return `<span class="query-result" style="color:green"> [LOGS REMOVIDOS: atividade=${d.tb_atividade_logs}, audit=${d.tb_audit_log}, changes=${d.tb_audit_log_changes}]</span>`
+    }
+    return `<span class="query-result" style="color:red"> [ERRO AO REMOVER LOGS!] ${line.msgDetails}</span>`
+  }
+  if (line.status) {
+    return '<span class="query-result" style="color:green"> [EXECUTADO COM SUCESSO!]</span>'
+  }
+  return `<span class="query-result" style="color:red"> [ERRO AO EXECUTAR COMANDO!] error: ${line.msgDetails}</span>`
 }
 
 function atualizarResultadosNaTela(results) {
@@ -332,10 +404,7 @@ function atualizarResultadosNaTela(results) {
       const parent = checkbox.parentElement
       const existingMsg = parent.querySelector('.query-result')
       if (existingMsg) existingMsg.remove()
-      const textSituation = line.status
-        ? '<span class="query-result" style="color:green"> [EXECUTADO COM SUCESSO!]</span>'
-        : `<span class="query-result" style="color:red"> [ERRO AO EXECUTAR COMANDO!] error: ${line.msgDetails}</span>`
-      parent.insertAdjacentHTML('beforeend', textSituation)
+      parent.insertAdjacentHTML('beforeend', formatarResultadoLinha(line))
     }
   })
 }
@@ -354,6 +423,130 @@ function processarResultados(data) {
     }
   })
   ElMessage.success('Query executada')
+}
+
+async function removerContasTestes() {
+  if (processando.value) {
+    ElMessage.warning('Já existe um processamento em andamento')
+    return
+  }
+
+  let preview = { total: 0, cutoff: '' }
+  try {
+    const response = await api.get('/query-database/remover-contas-testes/preview')
+    preview = response.data
+  } catch (error) {
+    console.error('Erro ao obter preview:', error)
+    ElMessage.error('Erro ao verificar contas teste elegíveis')
+    return
+  }
+
+  if (!preview.total) {
+    ElMessage.info('Nenhuma conta teste elegível para remoção')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `Esta ação é irreversível. Serão removidas ${preview.total} conta(s) teste com cadastro até ${preview.cutoff}, sem acesso após essa data (base e usuário MySQL). Não é necessário selecionar databases. Deseja continuar?`,
+      'Remover contas Testes',
+      {
+        confirmButtonText: 'Remover',
+        cancelButtonText: 'Cancelar',
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+
+  processandoRemoverLogs.value = false
+  processandoRemoverTestes.value = true
+  ultimoTipoJob.value = 'testes'
+  iniciarProcessamentoJob(preview.total)
+
+  api
+    .post('/query-database/remover-contas-testes')
+    .then((response) => {
+      if (response.data.job_id) {
+        jobId.value = response.data.job_id
+        progresso.total = response.data.total
+        ElMessage.success('Remoção de contas teste iniciada')
+        iniciarPolling()
+      } else {
+        processando.value = false
+        processandoRemoverTestes.value = false
+        ElMessage.error('Resposta inválida ao iniciar remoção')
+      }
+    })
+    .catch((error) => {
+      processando.value = false
+      processandoRemoverTestes.value = false
+      console.error('Erro ao remover contas teste:', error)
+      if (error.response && error.response.status === 400) {
+        ElMessage.warning(error.response.data?.error || 'Nenhuma conta elegível')
+      } else if (error.response && error.response.status === 403) {
+        ElMessage.error('Acesso negado.')
+      } else {
+        ElMessage.error('Erro ao iniciar remoção de contas teste')
+      }
+    })
+}
+
+async function removerLogs() {
+  const checkedDatabases = getCheckedDatabases()
+  if (checkedDatabases.length === 0) {
+    ElMessage.warning('Selecione pelo menos uma database')
+    return
+  }
+  if (processando.value) {
+    ElMessage.warning('Já existe um processamento em andamento')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `Esta ação é irreversível. Serão apagados registros com mais de 6 meses nas tabelas tb_atividade_logs, tb_audit_log e tb_audit_log_changes em ${checkedDatabases.length} database(s). Deseja continuar?`,
+      'Remover Logs',
+      {
+        confirmButtonText: 'Remover',
+        cancelButtonText: 'Cancelar',
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+
+  processandoRemoverTestes.value = false
+  processandoRemoverLogs.value = true
+  ultimoTipoJob.value = 'logs'
+  iniciarProcessamentoJob(checkedDatabases.length)
+
+  api
+    .post('/query-database/remover-logs', { db_name: checkedDatabases })
+    .then((response) => {
+      if (response.data.job_id) {
+        jobId.value = response.data.job_id
+        progresso.total = response.data.total
+        ElMessage.success('Remoção de logs iniciada')
+        iniciarPolling()
+      } else {
+        processando.value = false
+        processandoRemoverLogs.value = false
+        ElMessage.error('Resposta inválida ao iniciar remoção de logs')
+      }
+    })
+    .catch((error) => {
+      processando.value = false
+      processandoRemoverLogs.value = false
+      console.error('Erro ao remover logs:', error)
+      if (error.response && error.response.status === 403) {
+        ElMessage.error('Acesso negado. Apenas administradores podem remover logs.')
+      } else {
+        ElMessage.error('Erro ao iniciar remoção de logs')
+      }
+    })
 }
 
 function exportarUsuarios() {
