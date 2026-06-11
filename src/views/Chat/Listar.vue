@@ -51,12 +51,20 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
               <span class="truncate font-medium text-gray-900 dark:text-white">{{ displayClienteNome(c) }}</span>
-              <span
-                v-if="c.unread_count_atendente > 0"
-                class="inline-flex min-w-[22px] shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold text-white"
-              >
-                {{ c.unread_count_atendente }}
-              </span>
+              <div class="flex shrink-0 items-center gap-1.5">
+                <span
+                  v-if="c.last_message_at"
+                  class="text-[11px] text-gray-400 dark:text-gray-500"
+                >
+                  {{ formatTime(c.last_message_at) }}
+                </span>
+                <span
+                  v-if="c.unread_count_atendente > 0"
+                  class="inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-semibold text-white"
+                >
+                  {{ c.unread_count_atendente }}
+                </span>
+              </div>
             </div>
             <p class="truncate text-xs text-gray-500 dark:text-gray-400">
               {{ displayClienteSubtitulo(c) }}
