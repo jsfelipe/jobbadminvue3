@@ -463,7 +463,7 @@ async function removerLogs() {
     })
 }
 
-function baixarExportUsuarios() {
+function baixarExportUsuarios(tentativa = 0) {
   if (!jobId.value) {
     ElMessage.error('Job de exportação não encontrado')
     return
@@ -486,6 +486,10 @@ function baixarExportUsuarios() {
       ElMessage.success('Exportação concluída!')
     })
     .catch((error) => {
+      if (error.response && error.response.status === 404 && tentativa < 5) {
+        setTimeout(() => baixarExportUsuarios(tentativa + 1), 700)
+        return
+      }
       console.error('Erro ao baixar exportação:', error)
       ElMessage.error('Erro ao baixar arquivo de exportação')
     })
