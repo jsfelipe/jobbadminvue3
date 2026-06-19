@@ -152,6 +152,9 @@ const progressoPercentage = computed(() => {
 })
 
 const mensagemProcessamento = computed(() => {
+  if (ultimoTipoJob.value === 'export') {
+    return 'Exportando usuários das databases selecionadas...'
+  }
   if (processandoRemoverLogs.value) {
     return 'Removendo logs nas databases selecionadas...'
   }
@@ -338,7 +341,9 @@ function verificarProgresso() {
         processando.value = false
         processandoRemoverLogs.value = false
         progresso.percentage = 100
-        if (tipo === 'logs') {
+        if (tipo === 'export') {
+          baixarExportUsuarios()
+        } else if (tipo === 'logs') {
           ElMessage.success('Remoção de logs concluída!')
         } else {
           ElMessage.success('Processamento concluído!')
@@ -458,40 +463,76 @@ async function removerLogs() {
     })
 }
 
+function baixarExportUsuarios() {
+  if (!jobId.value) {
+    ElMessage.error('Job de exportação não encontrado')
+    return
+  }
+
+  api
+    .get(`/query-database/exportar-usuarios/download/${jobId.value}`, { responseType: 'blob' })
+    .then((response) => {
+      const blob = new Blob([response.data], { type: 'text/plain;charset=utf-8' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `usuarios-${new Date().toISOString().slice(0, 10)}.txt`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('Exportação concluída!')
+    })
+    .catch((error) => {
+      console.error('Erro ao baixar exportação:', error)
+      ElMessage.error('Erro ao baixar arquivo de exportação')
+    })
+}
+
 function exportarUsuarios() {
   const checkedDatabases = getCheckedDatabases()
   if (checkedDatabases.length === 0) {
     ElMessage.warning('Verifique se há pelo menos uma database selecionada.')
     return
   }
-  carregando.value = true
+  if (processando.value) {
+    ElMessage.warning('Já existe um processamento em andamento')
+    return
+  }
+
+  processandoRemoverLogs.value = false
+  ultimoTipoJob.value = 'export'
+  iniciarProcessamentoJob(checkedDatabases.length)
+
+  const payload = {
+    db_name: checkedDatabases,
+    tipo_jobb: formData.tipo_jobb,
+    tipo_cliente: formData.tipo_cliente,
+  }
+
   api
-    .post('/query-database/listar-usuarios', { db_name: checkedDatabases })
+    .post('/query-database/exportar-usuarios', payload)
     .then((response) => {
-      carregando.value = false
-      const emails = response.data
-      if (emails === '1' || !emails) {
-        ElMessage.success('Query executada com sucesso')
+      if (response.data.job_id) {
+        jobId.value = response.data.job_id
+        progresso.total = response.data.total
+        ElMessage.success('Exportação iniciada')
+        iniciarPolling()
       } else {
-        const baseUrl = (import.meta.env.VITE_API || '').replace(/\/$/, '') || window.location.origin + '/api'
-        const form = document.createElement('form')
-        form.method = 'POST'
-        form.action = `${baseUrl}/query-database/result-export-email`
-        form.target = '_blank'
-        const input = document.createElement('input')
-        input.type = 'hidden'
-        input.name = 'emails'
-        input.value = emails
-        form.appendChild(input)
-        document.body.appendChild(form)
-        form.submit()
-        document.body.removeChild(form)
+        processando.value = false
+        ElMessage.error('Resposta inválida ao iniciar exportação')
       }
     })
     .catch((error) => {
-      carregando.value = false
+      processando.value = false
       console.error('Erro ao exportar usuários:', error)
-      ElMessage.error('Erro ao exportar usuários')
+      if (error.response && error.response.status === 403) {
+        ElMessage.error('Acesso negado. Apenas administradores podem exportar usuários.')
+      } else if (error.response && error.response.data && error.response.data.error) {
+        ElMessage.error(error.response.data.error)
+      } else {
+        ElMessage.error('Erro ao exportar usuários')
+      }
     })
 }
 
