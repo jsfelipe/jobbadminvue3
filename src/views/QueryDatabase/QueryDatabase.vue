@@ -472,11 +472,13 @@ function baixarExportUsuarios() {
   api
     .get(`/query-database/exportar-usuarios/download/${jobId.value}`, { responseType: 'blob' })
     .then((response) => {
-      const blob = new Blob([response.data], { type: 'text/plain;charset=utf-8' })
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `usuarios-${new Date().toISOString().slice(0, 10)}.txt`
+      link.download = `usuarios-${new Date().toISOString().slice(0, 10)}.xlsx`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
