@@ -73,7 +73,7 @@
               </label>
               <el-select v-model="tipo_jobb" name="tipo_jobb" placeholder="Selecione o tipo" style="width: 100%">
                 <el-option value="V" label="Video" />
-                <el-option value="30" label="Jobb 3.0" />
+                <el-option value="40" label="Jobb 4.0" />
                 <el-option value="24" label="Gestor" />
                 <el-option value="A" label="Audio" />
               </el-select>
@@ -91,25 +91,25 @@
   </admin-layout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import { clienteService } from '@/services/cliente'
 
 const route = useRoute()
 const router = useRouter()
 
-const errors = ref([])
+const errors = ref<string[]>([])
 const loading = ref(false)
-const id_cliente = ref(null)
-const subdominio = ref(null)
-const login = ref(null)
-const senha = ref(null)
-const tipo_jobb = ref(null)
+const id_cliente = ref<string | null>(null)
+const subdominio = ref('')
+const login = ref('')
+const senha = ref('')
+const tipo_jobb = ref('40')
 
-const checkForm = async (e) => {
+const checkForm = async (e: Event) => {
   e.preventDefault()
   errors.value = []
 
@@ -119,25 +119,24 @@ const checkForm = async (e) => {
   if (!login.value) {
     errors.value.push('O login é obrigatório.')
   }
+  if (!senha.value) {
+    errors.value.push('A senha é obrigatória.')
+  }
+  if (!tipo_jobb.value) {
+    errors.value.push('O tipo é obrigatório.')
+  }
 
-  if (errors.value.length) {
+  if (errors.value.length || !id_cliente.value) {
     return
   }
 
   loading.value = true
   try {
-    const formData = new FormData()
-    formData.append('id_cliente', id_cliente.value)
-    formData.append('subdominio', subdominio.value)
-    formData.append('login', login.value)
-    formData.append('senha', senha.value)
-    formData.append('tipo_jobb', tipo_jobb.value)
-
-    const response = await axios({
-      method: 'post',
-      url: 'https://jobbadmin.sistemajobb.com.br/access/cadastro-via-site',
-      data: formData,
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const response = await clienteService.criarDominio(id_cliente.value, {
+      subdominio: subdominio.value,
+      login: login.value,
+      senha: senha.value,
+      tipo_jobb: tipo_jobb.value,
     })
 
     if (response.data.code === 1) {
@@ -145,19 +144,23 @@ const checkForm = async (e) => {
       router.push({ name: 'admin.clientes' })
     } else {
       ElMessage.error({
-        message: `Erro, domínio não criado: ${response.data.msg}`,
+        message: `Erro, domínio não criado: ${response.data.msg || 'Falha desconhecida'}`,
         duration: 8000,
       })
     }
-  } catch (error) {
-    console.error('Erro ao criar domínio:', error)
-    ElMessage.error('Erro ao criar domínio. Tente novamente.')
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { data?: { msg?: string } } }
+    const msg = axiosError.response?.data?.msg
+    ElMessage.error({
+      message: msg ? `Erro, domínio não criado: ${msg}` : 'Erro ao criar domínio. Tente novamente.',
+      duration: 8000,
+    })
   } finally {
     loading.value = false
   }
 }
 
 onMounted(() => {
-  id_cliente.value = route.params.id
+  id_cliente.value = String(route.params.id)
 })
 </script>

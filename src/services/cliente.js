@@ -77,6 +77,15 @@ export const clienteService = {
     })
   },
 
+  criarDominio: (idCliente, payload) => {
+    return api.post(`/clientes/${idCliente}/dominio`, {
+      subdominio: payload.subdominio,
+      login: payload.login,
+      senha: payload.senha,
+      tipo_jobb: payload.tipo_jobb,
+    })
+  },
+
   alterar: async (data) => {
     try {
       const response = await api.put(`/clientes/${data.id_cliente}`, data)
