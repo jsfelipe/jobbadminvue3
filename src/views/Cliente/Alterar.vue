@@ -14,7 +14,8 @@
             </label>
             <el-radio-group v-model="data.tipo_jobb">
               <el-radio label="V">VIDEO</el-radio>
-              <el-radio label="J03">Jobb3.0</el-radio>
+              <el-radio label="J03">Jobb 4.0</el-radio>
+              <el-radio label="JOBBLIVE">Jobb Live</el-radio>
               <el-radio label="G24">Gestor24h</el-radio>
               <el-radio label="A">AUDIO</el-radio>
             </el-radio-group>

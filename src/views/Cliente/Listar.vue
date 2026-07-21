@@ -57,7 +57,8 @@
             <el-select v-model="filtros.tipo_jobb" placeholder="Tipo Jobb" clearable>
               <el-option value="" label="Tipo Jobb" />
               <el-option value="V" label="Jobb 2.0" />
-              <el-option value="J03" label="Jobb 3.0" />
+              <el-option value="J03" label="Jobb 4.0" />
+              <el-option value="JOBBLIVE" label="Jobb Live" />
               <el-option value="G24" label="Gestor24h" />
             </el-select>
           </div>
@@ -179,7 +180,8 @@
             <template #default="scope">
               <span v-if="scope.row.tipo_jobb === 'V'">Video</span>
               <span v-else-if="scope.row.tipo_jobb === 'A'">Audio</span>
-              <span v-else-if="scope.row.tipo_jobb === 'J03'">Jobb3.0</span>
+              <span v-else-if="scope.row.tipo_jobb === 'J03'">Jobb 4.0</span>
+              <span v-else-if="scope.row.tipo_jobb === 'JOBBLIVE'">Jobb Live</span>
               <span v-else-if="scope.row.tipo_jobb === 'G24'">Gestor24h</span>
               <span v-else-if="scope.row.tipo_jobb === 'E'">Estudio</span>
             </template>
@@ -263,7 +265,8 @@
                 <strong>Tipo:</strong>
                 <span v-if="row.tipo_jobb === 'V'">Video</span>
                 <span v-else-if="row.tipo_jobb === 'A'">Audio</span>
-                <span v-else-if="row.tipo_jobb === 'J03'">Jobb3.0</span>
+                <span v-else-if="row.tipo_jobb === 'J03'">Jobb 4.0</span>
+                <span v-else-if="row.tipo_jobb === 'JOBBLIVE'">Jobb Live</span>
                 <span v-else-if="row.tipo_jobb === 'G24'">Gestor24h</span>
                 <span v-else-if="row.tipo_jobb === 'E'">Estudio</span>
                 <span v-else>-</span>

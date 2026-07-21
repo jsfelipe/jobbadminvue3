@@ -112,6 +112,7 @@
               >
                 <el-option value="V" label="Video" />
                 <el-option value="J03" label="Jobb 4.0" />
+                <el-option value="JOBBLIVE" label="Jobb Live" />
                 <el-option value="24" label="Gestor" />
                 <el-option value="A" label="Audio" />
               </el-select>
