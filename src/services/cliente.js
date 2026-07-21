@@ -86,6 +86,10 @@ export const clienteService = {
     })
   },
 
+  progressoDominio: (jobId) => {
+    return api.get(`/clientes/dominio/progresso/${jobId}`)
+  },
+
   alterar: async (data) => {
     try {
       const response = await api.put(`/clientes/${data.id_cliente}`, data)
