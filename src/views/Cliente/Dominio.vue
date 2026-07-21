@@ -111,7 +111,7 @@
                 :disabled="processando"
               >
                 <el-option value="V" label="Video" />
-                <el-option value="40" label="Jobb 4.0" />
+                <el-option value="J03" label="Jobb 4.0" />
                 <el-option value="24" label="Gestor" />
                 <el-option value="A" label="Audio" />
               </el-select>
@@ -154,7 +154,7 @@ const id_cliente = ref<string | null>(null)
 const subdominio = ref('')
 const login = ref('')
 const senha = ref('')
-const tipo_jobb = ref('40')
+const tipo_jobb = ref('J03')
 const jobId = ref<string | null>(null)
 
 const progresso = reactive<ProgressoDominio>({
