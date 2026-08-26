@@ -61,6 +61,7 @@
                 <el-option label="ESTUDIO" value="E" />
                 <el-option label="VIDEO" value="V" />
                 <el-option label="J03" value="J03" />
+                <el-option label="JOBBLIVE" value="JOBBLIVE" />
               </el-select>
               <el-select
                 v-model="formData.tipo_cliente"
