@@ -175,6 +175,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/query-database/exportar-emails',
+      name: 'admin.query-database.exportar-emails',
+      component: () => import('../views/QueryDatabase/ExportarEmails.vue'),
+      meta: {
+        title: 'Exportar E-mails',
+        requiresProfile: 1,
+      },
+    },
+    {
       path: '/admin/chat',
       name: 'admin.chat',
       component: () => import('../views/Chat/Listar.vue'),

@@ -98,8 +98,8 @@
 
           <div class="flex gap-2">
             <el-button type="primary" :disabled="processando" @click="salvar">Salvar</el-button>
-            <el-button type="success" :disabled="processando" @click="exportarUsuarios">
-              Exportar E-mail dos Usuários
+            <el-button type="success" :disabled="processando" @click="exportarEmails">
+              Exportar E-mails
             </el-button>
             <el-button type="danger" :disabled="processando" @click="removerLogs">Remover Logs</el-button>
             <el-button type="warning" :disabled="processando" @click="removerContasTestes">
@@ -153,9 +153,6 @@ const progressoPercentage = computed(() => {
 })
 
 const mensagemProcessamento = computed(() => {
-  if (ultimoTipoJob.value === 'export') {
-    return 'Exportando usuários das databases selecionadas...'
-  }
   if (processandoRemoverLogs.value) {
     return 'Removendo logs nas databases selecionadas...'
   }
@@ -342,9 +339,7 @@ function verificarProgresso() {
         processando.value = false
         processandoRemoverLogs.value = false
         progresso.percentage = 100
-        if (tipo === 'export') {
-          baixarExportUsuarios()
-        } else if (tipo === 'logs') {
+        if (tipo === 'logs') {
           ElMessage.success('Remoção de logs concluída!')
         } else {
           ElMessage.success('Processamento concluído!')
@@ -409,6 +404,10 @@ function removerContasTestes() {
   router.push({ name: 'admin.query-database.remover-contas-testes' })
 }
 
+function exportarEmails() {
+  router.push({ name: 'admin.query-database.exportar-emails' })
+}
+
 async function removerLogs() {
   const checkedDatabases = getCheckedDatabases()
   if (checkedDatabases.length === 0) {
@@ -460,85 +459,6 @@ async function removerLogs() {
         ElMessage.error('Acesso negado. Apenas administradores podem remover logs.')
       } else {
         ElMessage.error('Erro ao iniciar remoção de logs')
-      }
-    })
-}
-
-function baixarExportUsuarios(tentativa = 0) {
-  if (!jobId.value) {
-    ElMessage.error('Job de exportação não encontrado')
-    return
-  }
-
-  api
-    .get(`/query-database/exportar-usuarios/download/${jobId.value}`, { responseType: 'blob' })
-    .then((response) => {
-      const blob = new Blob([response.data], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `usuarios-${new Date().toISOString().slice(0, 10)}.xlsx`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      ElMessage.success('Exportação concluída!')
-    })
-    .catch((error) => {
-      if (error.response && error.response.status === 404 && tentativa < 5) {
-        setTimeout(() => baixarExportUsuarios(tentativa + 1), 700)
-        return
-      }
-      console.error('Erro ao baixar exportação:', error)
-      ElMessage.error('Erro ao baixar arquivo de exportação')
-    })
-}
-
-function exportarUsuarios() {
-  const checkedDatabases = getCheckedDatabases()
-  if (checkedDatabases.length === 0) {
-    ElMessage.warning('Verifique se há pelo menos uma database selecionada.')
-    return
-  }
-  if (processando.value) {
-    ElMessage.warning('Já existe um processamento em andamento')
-    return
-  }
-
-  processandoRemoverLogs.value = false
-  ultimoTipoJob.value = 'export'
-  iniciarProcessamentoJob(checkedDatabases.length)
-
-  const payload = {
-    db_name: checkedDatabases,
-    tipo_jobb: formData.tipo_jobb,
-    tipo_cliente: formData.tipo_cliente,
-  }
-
-  api
-    .post('/query-database/exportar-usuarios', payload)
-    .then((response) => {
-      if (response.data.job_id) {
-        jobId.value = response.data.job_id
-        progresso.total = response.data.total
-        ElMessage.success('Exportação iniciada')
-        iniciarPolling()
-      } else {
-        processando.value = false
-        ElMessage.error('Resposta inválida ao iniciar exportação')
-      }
-    })
-    .catch((error) => {
-      processando.value = false
-      console.error('Erro ao exportar usuários:', error)
-      if (error.response && error.response.status === 403) {
-        ElMessage.error('Acesso negado. Apenas administradores podem exportar usuários.')
-      } else if (error.response && error.response.data && error.response.data.error) {
-        ElMessage.error(error.response.data.error)
-      } else {
-        ElMessage.error('Erro ao exportar usuários')
       }
     })
 }
