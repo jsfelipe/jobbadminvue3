@@ -13,11 +13,15 @@ export function displayClienteNome(c: Pick<ChatConversaRow, 'nome_usuario' | 'id
 }
 
 export function displayClienteSubtitulo(
-  c: Pick<ChatConversaRow, 'email' | 'unidade_nome' | 'unidade_dbname' | 'id_usuario_externo'>,
+  c: Pick<ChatConversaRow, 'email' | 'unidade_nome' | 'unidade_dbname' | 'id_usuario_externo' | 'celular'>,
 ): string {
   const email = String(c.email || '').trim()
   if (email) {
     return email
+  }
+  const celular = String(c.celular || '').trim()
+  if (celular) {
+    return celular
   }
   const unidade = String(c.unidade_nome || c.unidade_dbname || '').trim()
   if (unidade) {

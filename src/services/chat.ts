@@ -10,7 +10,8 @@ export interface ChatConversaRow {
   status: string
   fila: 'comercial' | 'suporte' | null
   ia_ativa: boolean
-  id_usuario_externo?: number
+  celular: string | null
+  perfil_coletado?: boolean
   last_message_at: string | null
   last_message_preview: string | null
   unread_count_atendente: number
