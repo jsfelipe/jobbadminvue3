@@ -78,6 +78,9 @@ export const chatService = {
   assumir(id: number) {
     return api.post<ChatConversaRow>(`/chat/conversas/${id}/assumir`)
   },
+  reativarIa(id: number) {
+    return api.post<ChatConversaRow>(`/chat/conversas/${id}/reativar-ia`)
+  },
   marcarLida(id: number) {
     return api.post<{ ok: boolean }>(`/chat/conversas/${id}/ler`)
   },

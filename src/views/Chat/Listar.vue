@@ -126,6 +126,15 @@
           </div>
           <div class="flex shrink-0 gap-2">
             <button
+              v-if="selectedConversa?.status === 'aberta' && !selectedConversa.ia_ativa"
+              type="button"
+              class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+              :disabled="actionLoading"
+              @click="doReativarIa"
+            >
+              Devolver à IA
+            </button>
+            <button
               v-if="selectedConversa && !selectedConversa.id_atendente_responsavel"
               type="button"
               class="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
@@ -453,6 +462,24 @@ async function openAnexo(anexoId: number) {
     }
   } catch {
     /* noop */
+  }
+}
+
+async function doReativarIa() {
+  const id = selectedId.value
+  if (!id) {
+    return
+  }
+  actionLoading.value = true
+  try {
+    const r = await chatService.reativarIa(id)
+    selectedConversa.value = r.data
+    void loadList()
+    await selectConversa(id)
+  } catch {
+    /* noop */
+  } finally {
+    actionLoading.value = false
   }
 }
 
