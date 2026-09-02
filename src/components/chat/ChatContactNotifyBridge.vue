@@ -11,30 +11,55 @@ import { displayClienteNomeFromLobby } from '@/utils/chat-cliente-label'
 
 const router = useRouter()
 
-function onLobbyEvent(payload: ChatLobbyPayload): void {
-  if (payload.type !== 'chat_contact_request') {
-    return
+function openConversa(conversaId: number): void {
+  if (conversaId > 0) {
+    void router.push({ name: 'admin.chat', query: { conversa: String(conversaId) } })
+  } else {
+    void router.push({ name: 'admin.chat' })
   }
+}
 
+function onLobbyEvent(payload: ChatLobbyPayload): void {
   const conversaId = Number(payload.conversa_id)
   const nome = displayClienteNomeFromLobby(payload)
 
-  ElNotification({
-    title: 'Cliente em teste quer falar',
-    message: nome,
-    type: 'info',
-    duration: 8000,
-    customClass: 'custom-notification info',
-    onClick: () => {
-      if (conversaId > 0) {
-        void router.push({ name: 'admin.chat', query: { conversa: String(conversaId) } })
-      } else {
-        void router.push({ name: 'admin.chat' })
-      }
-    },
-  })
+  if (payload.type === 'chat_contact_request') {
+    ElNotification({
+      title: 'Cliente em teste quer falar',
+      message: nome,
+      type: 'info',
+      duration: 8000,
+      customClass: 'custom-notification info',
+      onClick: () => openConversa(conversaId),
+    })
+    chatBus.emit('chat:unread-refresh')
+    return
+  }
 
-  chatBus.emit('chat:unread-refresh')
+  if (payload.type === 'chat_human_request') {
+    ElNotification({
+      title: 'Cliente pediu atendimento humano',
+      message: nome,
+      type: 'warning',
+      duration: 10000,
+      customClass: 'custom-notification warning',
+      onClick: () => openConversa(conversaId),
+    })
+    chatBus.emit('chat:unread-refresh')
+    return
+  }
+
+  if (payload.type === 'chat_ia_handoff') {
+    ElNotification({
+      title: 'Chat transferido para humano',
+      message: nome !== '—' ? nome : 'Conversa #' + String(conversaId),
+      type: 'info',
+      duration: 6000,
+      customClass: 'custom-notification info',
+      onClick: () => openConversa(conversaId),
+    })
+    chatBus.emit('chat:unread-refresh')
+  }
 }
 
 onMounted(() => {
