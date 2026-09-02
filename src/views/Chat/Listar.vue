@@ -69,6 +69,21 @@
             <p class="truncate text-xs text-gray-500 dark:text-gray-400">
               {{ displayClienteSubtitulo(c) }}
             </p>
+            <div v-if="c.fila || c.ia_ativa" class="mt-1 flex flex-wrap items-center gap-1">
+              <span
+                v-if="c.fila"
+                class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                :class="c.fila === 'comercial' ? 'bg-brand-100 text-brand-800' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'"
+              >
+                {{ filaLabel(c.fila) }}
+              </span>
+              <span
+                v-if="c.ia_ativa"
+                class="inline-flex rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
+              >
+                IA
+              </span>
+            </div>
             <p class="truncate text-sm text-gray-600 dark:text-gray-300">
               {{ c.last_message_preview || '—' }}
             </p>
@@ -89,6 +104,21 @@
             <h2 class="truncate font-semibold text-gray-900 dark:text-white">
               {{ selectedConversa ? displayClienteNome(selectedConversa) : '…' }}
             </h2>
+            <div v-if="selectedConversa && (selectedConversa.fila || selectedConversa.ia_ativa)" class="mt-1 flex flex-wrap items-center gap-1">
+              <span
+                v-if="selectedConversa.fila"
+                class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                :class="selectedConversa.fila === 'comercial' ? 'bg-brand-100 text-brand-800' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'"
+              >
+                {{ filaLabel(selectedConversa.fila) }}
+              </span>
+              <span
+                v-if="selectedConversa.ia_ativa"
+                class="inline-flex rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
+              >
+                IA
+              </span>
+            </div>
             <p class="truncate text-xs text-gray-500">
               {{ selectedConversa ? displayClienteSubtitulo(selectedConversa) : '' }}
               <span v-if="selectedConversa?.nome_atendente"> · {{ selectedConversa.nome_atendente }}</span>
@@ -125,15 +155,11 @@
             v-for="m in mensagensOrdered"
             :key="m.id"
             class="flex"
-            :class="m.remetente_tipo === 'atendente' ? 'justify-end' : 'justify-start'"
+            :class="msgAlignClass(m.remetente_tipo)"
           >
             <div
               class="max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm"
-              :class="
-                m.remetente_tipo === 'atendente'
-                  ? 'rounded-br-md bg-brand-500 text-white'
-                  : 'rounded-bl-md bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-              "
+              :class="msgBubbleClass(m.remetente_tipo)"
             >
               <p class="text-[10px] opacity-80">{{ m.nome_remetente }}</p>
               <p class="whitespace-pre-wrap">{{ m.mensagem }}</p>
@@ -222,11 +248,15 @@ function voltar(): void {
 }
 const myUserId = computed(() => Number(rootState.value.Login?.data?.id_usuarios ?? 0))
 
-const filtro = ref<'todas' | 'minhas' | 'nao_atribuidas' | 'fechadas'>('todas')
-const filtroOptions: { value: typeof filtro.value; label: string }[] = [
+type ChatFiltro = 'todas' | 'minhas' | 'nao_atribuidas' | 'fechadas' | 'comercial' | 'suporte'
+
+const filtro = ref<ChatFiltro>('todas')
+const filtroOptions: { value: ChatFiltro; label: string }[] = [
   { value: 'todas', label: 'Todas' },
   { value: 'minhas', label: 'Minhas' },
   { value: 'nao_atribuidas', label: 'Não atrib.' },
+  { value: 'comercial', label: 'Comercial' },
+  { value: 'suporte', label: 'Suporte' },
   { value: 'fechadas', label: 'Fechadas' },
 ]
 
@@ -255,6 +285,39 @@ const mensagensOrdered = computed(() => {
   const list = [...mensagens.value]
   return list.sort((a, b) => a.id - b.id)
 })
+
+function filaLabel(fila: ChatConversaRow['fila']): string {
+  if (fila === 'comercial') {
+    return 'Comercial'
+  }
+  if (fila === 'suporte') {
+    return 'Suporte'
+  }
+  return ''
+}
+
+function msgAlignClass(tipo: string): string {
+  if (tipo === 'atendente' || tipo === 'ia') {
+    return 'justify-end'
+  }
+  if (tipo === 'sistema') {
+    return 'justify-center'
+  }
+  return 'justify-start'
+}
+
+function msgBubbleClass(tipo: string): string {
+  if (tipo === 'atendente') {
+    return 'rounded-br-md bg-brand-500 text-white'
+  }
+  if (tipo === 'ia') {
+    return 'rounded-br-md bg-indigo-600 text-white'
+  }
+  if (tipo === 'sistema') {
+    return 'rounded-md bg-gray-500 text-white'
+  }
+  return 'rounded-bl-md bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+}
 
 function initials(name: string): string {
   const p = name.trim().split(/\s+/)

@@ -8,6 +8,9 @@ export interface ChatConversaRow {
   unidade_nome: string | null
   unidade_sigla: string | null
   status: string
+  fila: 'comercial' | 'suporte' | null
+  ia_ativa: boolean
+  id_usuario_externo?: number
   last_message_at: string | null
   last_message_preview: string | null
   unread_count_atendente: number
