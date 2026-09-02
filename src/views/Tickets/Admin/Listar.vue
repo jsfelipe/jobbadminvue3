@@ -3,7 +3,12 @@
     <div class="space-y-4">
       <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-6">
-          <input v-model="filtro.q" class="rounded-lg border px-3 py-2" placeholder="Buscar" />
+          <input
+            v-model="filtro.q"
+            class="rounded-lg border px-3 py-2"
+            placeholder="ID, usuário, unidade ou assunto"
+            @keyup.enter="carregar"
+          />
           <select v-model="filtro.id_status" class="rounded-lg border px-3 py-2">
             <option value="">Status</option>
             <option v-for="item in meta.status" :key="item.id" :value="item.id">{{ item.nome }}</option>
