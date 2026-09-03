@@ -27,6 +27,7 @@ export interface ChatMensagemRow {
   nome_remetente: string | null
   mensagem: string | null
   tem_anexo: boolean
+  interno?: boolean
   anexos: Array<{
     id: number
     nome_original: string
@@ -61,8 +62,11 @@ export const chatService = {
       total: number
     }>(`/chat/conversas/${id}/mensagens`, { params })
   },
-  responder(id: number, mensagem: string) {
-    return api.post<ChatMensagemRow>(`/chat/conversas/${id}/mensagens`, { mensagem })
+  responder(id: number, mensagem: string, opts?: { interno?: boolean }) {
+    return api.post<ChatMensagemRow>(`/chat/conversas/${id}/mensagens`, {
+      mensagem,
+      interno: !!opts?.interno,
+    })
   },
   uploadAnexo(id: number, file: File, mensagem?: string) {
     const fd = new FormData()
@@ -77,6 +81,9 @@ export const chatService = {
   },
   assumir(id: number) {
     return api.post<ChatConversaRow>(`/chat/conversas/${id}/assumir`)
+  },
+  alterarFila(id: number, fila: 'comercial' | 'suporte') {
+    return api.post<ChatConversaRow>(`/chat/conversas/${id}/fila`, { fila })
   },
   reativarIa(id: number) {
     return api.post<ChatConversaRow>(`/chat/conversas/${id}/reativar-ia`)

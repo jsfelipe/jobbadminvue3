@@ -111,7 +111,10 @@
             <h2 class="truncate font-semibold text-gray-900 dark:text-white">
               {{ selectedConversa ? displayClienteNome(selectedConversa) : '…' }}
             </h2>
-            <div v-if="selectedConversa && (selectedConversa.fila || selectedConversa.ia_ativa || resolveChatSiteOrigem(selectedConversa))" class="mt-1 flex flex-wrap items-center gap-1">
+            <div
+              v-if="selectedConversa && (selectedConversa.status === 'aberta' || selectedConversa.fila || selectedConversa.ia_ativa || resolveChatSiteOrigem(selectedConversa))"
+              class="mt-1 flex flex-wrap items-center gap-1"
+            >
               <span
                 v-if="resolveChatSiteOrigem(selectedConversa)"
                 class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
@@ -119,8 +122,36 @@
               >
                 {{ chatSiteOrigemLabel(resolveChatSiteOrigem(selectedConversa)) }}
               </span>
+              <template v-if="selectedConversa.status === 'aberta'">
+                <button
+                  type="button"
+                  class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition"
+                  :class="
+                    selectedConversa.fila === 'comercial'
+                      ? 'bg-brand-500 text-white'
+                      : 'bg-brand-100 text-brand-800 hover:bg-brand-200'
+                  "
+                  :disabled="actionLoading"
+                  @click="doAlterarFila('comercial')"
+                >
+                  Comercial
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition"
+                  :class="
+                    selectedConversa.fila === 'suporte'
+                      ? 'bg-slate-700 text-white dark:bg-slate-500'
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200'
+                  "
+                  :disabled="actionLoading"
+                  @click="doAlterarFila('suporte')"
+                >
+                  Suporte
+                </button>
+              </template>
               <span
-                v-if="selectedConversa.fila"
+                v-else-if="selectedConversa.fila"
                 class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
                 :class="selectedConversa.fila === 'comercial' ? 'bg-brand-100 text-brand-800' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'"
               >
@@ -164,7 +195,7 @@
               :disabled="actionLoading"
               @click="doFechar"
             >
-              Fechar
+              Finalizar Atendimento
             </button>
           </div>
         </header>
@@ -178,13 +209,19 @@
             v-for="m in mensagensOrdered"
             :key="m.id"
             class="flex"
-            :class="msgAlignClass(m.remetente_tipo)"
+            :class="msgAlignClass(m)"
           >
             <div
               class="max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm"
-              :class="msgBubbleClass(m.remetente_tipo)"
+              :class="msgBubbleClass(m)"
             >
-              <p class="text-[10px] opacity-80">{{ m.nome_remetente }}</p>
+              <p class="text-[10px] opacity-80">
+                {{ m.nome_remetente }}
+                <span
+                  v-if="m.interno"
+                  class="ml-1 rounded bg-amber-200 px-1.5 py-0.5 text-[9px] font-semibold text-amber-950"
+                >Interno</span>
+              </p>
               <p class="whitespace-pre-wrap">{{ m.mensagem }}</p>
               <div v-if="m.tem_anexo && m.anexos?.length" class="mt-2 space-y-1">
                 <button
@@ -205,12 +242,21 @@
         </div>
 
         <footer class="border-t border-gray-200 p-3 dark:border-gray-700">
+          <label class="mb-2 inline-flex cursor-pointer items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <input v-model="comentarioInterno" type="checkbox" class="rounded border-gray-300" />
+            Comentário interno
+          </label>
           <div class="flex gap-2">
             <textarea
               v-model="draft"
               rows="2"
-              class="min-w-0 flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-              placeholder="Digite uma mensagem…"
+              class="min-w-0 flex-1 resize-none rounded-lg border px-3 py-2 text-sm dark:bg-gray-800 dark:text-white"
+              :class="
+                comentarioInterno
+                  ? 'border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/30'
+                  : 'border-gray-300 dark:border-gray-600'
+              "
+              :placeholder="comentarioInterno ? 'Comentário interno (só atendentes)…' : 'Digite uma mensagem…'"
               @keydown.enter.exact.prevent="sendText"
             />
             <div class="flex flex-col gap-2">
@@ -218,15 +264,16 @@
                 class="cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Anexo
-                <input type="file" accept="image/*,.pdf" class="hidden" @change="onFile" />
+                <input type="file" accept="image/*,.pdf" class="hidden" :disabled="comentarioInterno" @change="onFile" />
               </label>
               <button
                 type="button"
-                class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                class="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                :class="comentarioInterno ? 'bg-amber-600 hover:bg-amber-700' : 'bg-brand-500 hover:bg-brand-600'"
                 :disabled="sending || !selectedId"
                 @click="sendText"
               >
-                Enviar
+                {{ comentarioInterno ? 'Salvar' : 'Enviar' }}
               </button>
             </div>
           </div>
@@ -295,6 +342,7 @@ const selectedConversa = ref<ChatConversaRow | null>(null)
 const mensagens = ref<ChatMensagemRow[]>([])
 const loadingMsgs = ref(false)
 const draft = ref('')
+const comentarioInterno = ref(false)
 const sending = ref(false)
 const actionLoading = ref(false)
 const msgScrollRef = ref<HTMLElement | null>(null)
@@ -324,8 +372,10 @@ function filaLabel(fila: ChatConversaRow['fila']): string {
   return ''
 }
 
-function msgAlignClass(tipo: string): string {
-  if (tipo === 'atendente' || tipo === 'ia') {
+function msgAlignClass(m: ChatMensagemRow | string): string {
+  const tipo = typeof m === 'string' ? m : m.remetente_tipo
+  const interno = typeof m === 'string' ? false : !!m.interno
+  if (interno || tipo === 'atendente' || tipo === 'ia') {
     return 'justify-end'
   }
   if (tipo === 'sistema') {
@@ -334,7 +384,11 @@ function msgAlignClass(tipo: string): string {
   return 'justify-start'
 }
 
-function msgBubbleClass(tipo: string): string {
+function msgBubbleClass(m: ChatMensagemRow): string {
+  if (m.interno) {
+    return 'rounded-br-md border border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
+  }
+  const tipo = m.remetente_tipo
   if (tipo === 'atendente') {
     return 'rounded-br-md bg-brand-500 text-white'
   }
@@ -403,6 +457,7 @@ async function selectConversa(id: number) {
   loadingMsgs.value = true
   mensagens.value = []
   draft.value = ''
+  comentarioInterno.value = false
   if (unsubConv) {
     unsubConv()
     unsubConv = null
@@ -430,11 +485,15 @@ async function sendText() {
   }
   sending.value = true
   try {
-    const res = await chatService.responder(id, text)
+    const interno = comentarioInterno.value
+    const res = await chatService.responder(id, text, { interno })
     if (!mensagens.value.some((x) => x.id === res.data.id)) {
       mensagens.value.push(res.data)
     }
     draft.value = ''
+    if (interno) {
+      comentarioInterno.value = false
+    }
     const det = await chatService.detalhe(id)
     selectedConversa.value = det.data
     void loadList()
@@ -442,6 +501,26 @@ async function sendText() {
     /* noop */
   } finally {
     sending.value = false
+  }
+}
+
+async function doAlterarFila(fila: 'comercial' | 'suporte') {
+  const id = selectedId.value
+  if (!id || actionLoading.value) {
+    return
+  }
+  if (selectedConversa.value?.fila === fila) {
+    return
+  }
+  actionLoading.value = true
+  try {
+    const r = await chatService.alterarFila(id, fila)
+    selectedConversa.value = r.data
+    void loadList()
+  } catch {
+    /* noop */
+  } finally {
+    actionLoading.value = false
   }
 }
 
