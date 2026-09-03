@@ -69,7 +69,14 @@
             <p class="truncate text-xs text-gray-500 dark:text-gray-400">
               {{ displayClienteSubtitulo(c) }}
             </p>
-            <div v-if="c.fila || c.ia_ativa" class="mt-1 flex flex-wrap items-center gap-1">
+            <div v-if="c.fila || c.ia_ativa || resolveChatSiteOrigem(c)" class="mt-1 flex flex-wrap items-center gap-1">
+              <span
+                v-if="resolveChatSiteOrigem(c)"
+                class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                :class="chatSiteOrigemClass(resolveChatSiteOrigem(c))"
+              >
+                {{ chatSiteOrigemLabel(resolveChatSiteOrigem(c)) }}
+              </span>
               <span
                 v-if="c.fila"
                 class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
@@ -104,7 +111,14 @@
             <h2 class="truncate font-semibold text-gray-900 dark:text-white">
               {{ selectedConversa ? displayClienteNome(selectedConversa) : '…' }}
             </h2>
-            <div v-if="selectedConversa && (selectedConversa.fila || selectedConversa.ia_ativa)" class="mt-1 flex flex-wrap items-center gap-1">
+            <div v-if="selectedConversa && (selectedConversa.fila || selectedConversa.ia_ativa || resolveChatSiteOrigem(selectedConversa))" class="mt-1 flex flex-wrap items-center gap-1">
+              <span
+                v-if="resolveChatSiteOrigem(selectedConversa)"
+                class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                :class="chatSiteOrigemClass(resolveChatSiteOrigem(selectedConversa))"
+              >
+                {{ chatSiteOrigemLabel(resolveChatSiteOrigem(selectedConversa)) }}
+              </span>
               <span
                 v-if="selectedConversa.fila"
                 class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
@@ -234,6 +248,11 @@ import { chatService, type ChatConversaRow, type ChatMensagemRow } from '@/servi
 import { subscribeConversationChannel, chatAblyConnected } from '@/composables/useChatAbly'
 import { chatBus } from '@/lib/chat-bus'
 import { displayClienteNome, displayClienteSubtitulo } from '@/utils/chat-cliente-label'
+import {
+  chatSiteOrigemClass,
+  chatSiteOrigemLabel,
+  resolveChatSiteOrigem,
+} from '@/utils/chat-site-origem'
 
 interface LoginState {
   data?: { id_usuarios?: number }
