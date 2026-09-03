@@ -128,6 +128,17 @@
             </el-button>
           </div>
 
+          <div class="flex gap-4">
+            <el-button
+              type="primary"
+              @click="consultarStatusNF"
+              :loading="consultandoStatus"
+            >
+              <i class="fas fa-sync-alt mr-2"></i>
+              Consultar novamente via API
+            </el-button>
+          </div>
+
           <!-- Links quando autorizada -->
           <div v-if="isAutorizada(notaSelecionada.nf_status)" class="flex flex-wrap gap-4">
             <a
@@ -281,7 +292,8 @@ const consultarStatusNF = async () => {
   try {
     const response = await clienteService.consultarStatusNF(
       notaSelecionada.value.nf_id,
-      notaSelecionada.value.transaction_id
+      notaSelecionada.value.transaction_id,
+      id.value
     )
     
     if (response.data?.status === 'success' && response.data?.data) {
@@ -304,6 +316,7 @@ const consultarStatusNF = async () => {
       }
 
       ElMessage.success('Status atualizado com sucesso')
+      await listarNotas(id.value)
     } else {
       ElMessage.error('Erro ao consultar status da nota')
     }

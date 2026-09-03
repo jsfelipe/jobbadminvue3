@@ -127,7 +127,7 @@ export const clienteService = {
     })
   },
 
-  getNotas: async (id) => {
+  getNotas: async (id, extraParams = {}) => {
     const axios = (await import('axios')).default
     const paymentApiUrl = import.meta.env.VITE_PAYMENT_API || 
       (import.meta.env.PROD ? 'https://paymentv2.sistemajobb.com.br' : 'http://localhost:9093')
@@ -135,6 +135,7 @@ export const clienteService = {
       params: {
         id_user: 'J',
         cliente_id: id,
+        ...extraParams,
       },
     })
   },
@@ -151,15 +152,48 @@ export const clienteService = {
     })
   },
 
-  consultarStatusNF: async (nfId, transactionId) => {
+  consultarStatusNF: async (nfId, transactionId, clienteId = null) => {
     const axios = (await import('axios')).default
     const paymentApiUrl = import.meta.env.VITE_PAYMENT_API || 
       (import.meta.env.PROD ? 'https://paymentv2.sistemajobb.com.br' : 'http://localhost:9093')
-    return axios.get(`${paymentApiUrl}/api/nfes/status`, {
-      params: {
-        nf_id: nfId || null,
-        transaction_id: transactionId || null,
-      },
-    })
+    try {
+      return await axios.get(`${paymentApiUrl}/api/nfes/status`, {
+        params: {
+          nf_id: nfId || null,
+          transaction_id: transactionId || null,
+        },
+      })
+    } catch (error) {
+      if (error?.response?.status !== 404 || !clienteId) {
+        throw error
+      }
+
+      const fallback = await axios.get(`${paymentApiUrl}/api/nfes`, {
+        params: {
+          id_user: 'J',
+          cliente_id: clienteId,
+        },
+      })
+
+      const notas = fallback?.data?.data || fallback?.data || []
+      const match = Array.isArray(notas)
+        ? notas.find((item) =>
+          (nfId && item?.nf_id === nfId) ||
+          (transactionId && String(item?.transaction_id) === String(transactionId))
+        )
+        : null
+
+      if (!match) {
+        throw error
+      }
+
+      return {
+        data: {
+          status: 'success',
+          data: match,
+          source: 'fallback_nfes_list',
+        },
+      }
+    }
   },
 }

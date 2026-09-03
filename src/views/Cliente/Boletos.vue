@@ -368,7 +368,7 @@ const iniciarConsultaStatusNF = () => {
 
 const consultarStatusNF = async () => {
   try {
-    const resposta = await clienteService.consultarStatusNF(nfId.value, nfTransactionId.value)
+    const resposta = await clienteService.consultarStatusNF(nfId.value, nfTransactionId.value, id.value)
 
     if (resposta.data && resposta.data.status === 'success' && resposta.data.data) {
       nfStatusData.value = resposta.data.data
