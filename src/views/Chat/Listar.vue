@@ -1,10 +1,11 @@
 <template>
   <div
-    class="relative flex h-[calc(100vh-140px)] min-h-[480px] gap-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+    class="relative flex h-[calc(100dvh-7.5rem)] min-h-0 gap-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 md:min-h-[480px]"
   >
     <button
       type="button"
-      class="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      class="absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      :class="selectedId ? 'hidden md:flex' : 'flex'"
       aria-label="Fechar chat"
       title="Fechar"
       @click="voltar"
@@ -12,9 +13,10 @@
       <X class="h-5 w-5" stroke-width="2" />
     </button>
     <aside
-      class="flex w-full max-w-md flex-col border-r border-gray-200 dark:border-gray-700 md:w-[360px]"
+      class="w-full flex-col border-r border-gray-200 dark:border-gray-700 md:w-[360px] md:max-w-none md:shrink-0"
+      :class="selectedId ? 'hidden md:flex' : 'flex'"
     >
-      <div class="border-b border-gray-200 p-3 dark:border-gray-700">
+      <div class="border-b border-gray-200 p-3 pr-12 dark:border-gray-700">
         <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Chat Online</h1>
         <div class="mt-2 flex flex-wrap gap-1">
           <button
@@ -102,78 +104,92 @@
       </div>
     </aside>
 
-    <section class="flex min-w-0 flex-1 flex-col">
+    <section
+      class="min-w-0 flex-1 flex-col"
+      :class="selectedId ? 'flex' : 'hidden md:flex'"
+    >
       <template v-if="selectedId">
         <header
-          class="flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3 dark:border-gray-700"
+          class="flex flex-wrap items-start justify-between gap-2 border-b border-gray-200 px-3 py-3 dark:border-gray-700 md:px-4"
         >
-          <div class="min-w-0">
-            <h2 class="truncate font-semibold text-gray-900 dark:text-white">
-              {{ selectedConversa ? displayClienteNome(selectedConversa) : '…' }}
-            </h2>
-            <div
-              v-if="selectedConversa && (selectedConversa.status === 'aberta' || selectedConversa.fila || selectedConversa.ia_ativa || resolveChatSiteOrigem(selectedConversa))"
-              class="mt-1 flex flex-wrap items-center gap-1"
+          <div class="flex min-w-0 flex-1 items-start gap-2">
+            <button
+              type="button"
+              class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 md:hidden"
+              aria-label="Voltar para lista"
+              title="Voltar"
+              @click="clearSelection"
             >
-              <span
-                v-if="resolveChatSiteOrigem(selectedConversa)"
-                class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                :class="chatSiteOrigemClass(resolveChatSiteOrigem(selectedConversa))"
+              <ArrowLeft class="h-5 w-5" stroke-width="2" />
+            </button>
+            <div class="min-w-0 flex-1">
+              <h2 class="truncate font-semibold text-gray-900 dark:text-white">
+                {{ selectedConversa ? displayClienteNome(selectedConversa) : '…' }}
+              </h2>
+              <div
+                v-if="selectedConversa && (selectedConversa.status === 'aberta' || selectedConversa.fila || selectedConversa.ia_ativa || resolveChatSiteOrigem(selectedConversa))"
+                class="mt-1 flex flex-wrap items-center gap-1"
               >
-                {{ chatSiteOrigemLabel(resolveChatSiteOrigem(selectedConversa)) }}
-              </span>
-              <template v-if="selectedConversa.status === 'aberta'">
-                <button
-                  type="button"
-                  class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition"
-                  :class="
-                    selectedConversa.fila === 'comercial'
-                      ? 'bg-brand-500 text-white'
-                      : 'bg-brand-100 text-brand-800 hover:bg-brand-200'
-                  "
-                  :disabled="actionLoading"
-                  @click="doAlterarFila('comercial')"
+                <span
+                  v-if="resolveChatSiteOrigem(selectedConversa)"
+                  class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                  :class="chatSiteOrigemClass(resolveChatSiteOrigem(selectedConversa))"
                 >
-                  Comercial
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition"
-                  :class="
-                    selectedConversa.fila === 'suporte'
-                      ? 'bg-slate-700 text-white dark:bg-slate-500'
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200'
-                  "
-                  :disabled="actionLoading"
-                  @click="doAlterarFila('suporte')"
+                  {{ chatSiteOrigemLabel(resolveChatSiteOrigem(selectedConversa)) }}
+                </span>
+                <template v-if="selectedConversa.status === 'aberta'">
+                  <button
+                    type="button"
+                    class="inline-flex min-h-[28px] items-center rounded-full px-2.5 py-1 text-[10px] font-semibold transition"
+                    :class="
+                      selectedConversa.fila === 'comercial'
+                        ? 'bg-brand-500 text-white'
+                        : 'bg-brand-100 text-brand-800 hover:bg-brand-200'
+                    "
+                    :disabled="actionLoading"
+                    @click="doAlterarFila('comercial')"
+                  >
+                    Comercial
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex min-h-[28px] items-center rounded-full px-2.5 py-1 text-[10px] font-semibold transition"
+                    :class="
+                      selectedConversa.fila === 'suporte'
+                        ? 'bg-slate-700 text-white dark:bg-slate-500'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200'
+                    "
+                    :disabled="actionLoading"
+                    @click="doAlterarFila('suporte')"
+                  >
+                    Suporte
+                  </button>
+                </template>
+                <span
+                  v-else-if="selectedConversa.fila"
+                  class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                  :class="selectedConversa.fila === 'comercial' ? 'bg-brand-100 text-brand-800' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'"
                 >
-                  Suporte
-                </button>
-              </template>
-              <span
-                v-else-if="selectedConversa.fila"
-                class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                :class="selectedConversa.fila === 'comercial' ? 'bg-brand-100 text-brand-800' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'"
-              >
-                {{ filaLabel(selectedConversa.fila) }}
-              </span>
-              <span
-                v-if="selectedConversa.ia_ativa"
-                class="inline-flex rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
-              >
-                IA
-              </span>
+                  {{ filaLabel(selectedConversa.fila) }}
+                </span>
+                <span
+                  v-if="selectedConversa.ia_ativa"
+                  class="inline-flex rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
+                >
+                  IA
+                </span>
+              </div>
+              <p class="truncate text-xs text-gray-500">
+                {{ selectedConversa ? displayClienteSubtitulo(selectedConversa) : '' }}
+                <span v-if="selectedConversa?.nome_atendente"> · {{ selectedConversa.nome_atendente }}</span>
+              </p>
             </div>
-            <p class="truncate text-xs text-gray-500">
-              {{ selectedConversa ? displayClienteSubtitulo(selectedConversa) : '' }}
-              <span v-if="selectedConversa?.nome_atendente"> · {{ selectedConversa.nome_atendente }}</span>
-            </p>
           </div>
-          <div class="flex shrink-0 gap-2">
+          <div class="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto md:pr-10">
             <button
               v-if="selectedConversa?.status === 'aberta' && !selectedConversa.ia_ativa"
               type="button"
-              class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+              class="min-h-[36px] rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
               :disabled="actionLoading"
               @click="doReativarIa"
             >
@@ -182,7 +198,7 @@
             <button
               v-if="selectedConversa && !selectedConversa.id_atendente_responsavel"
               type="button"
-              class="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+              class="min-h-[36px] rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
               :disabled="actionLoading"
               @click="doAssumir"
             >
@@ -191,7 +207,7 @@
             <button
               v-if="selectedConversa?.status === 'aberta' && isResponsavel"
               type="button"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              class="min-h-[36px] rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
               :disabled="actionLoading"
               @click="doFechar"
             >
@@ -290,7 +306,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
-import { X } from 'lucide-vue-next'
+import { ArrowLeft, X } from 'lucide-vue-next'
 import { chatService, type ChatConversaRow, type ChatMensagemRow } from '@/services/chat'
 import { subscribeConversationChannel, chatAblyConnected } from '@/composables/useChatAbly'
 import { chatBus } from '@/lib/chat-bus'
@@ -348,6 +364,14 @@ const actionLoading = ref(false)
 const msgScrollRef = ref<HTMLElement | null>(null)
 
 let unsubConv: (() => void) | null = null
+
+function clearSelection(): void {
+  if (unsubConv) {
+    unsubConv()
+    unsubConv = null
+  }
+  selectedId.value = null
+}
 
 const isResponsavel = computed(() => {
   const c = selectedConversa.value
