@@ -303,7 +303,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ArrowLeft, X } from 'lucide-vue-next'
@@ -385,6 +385,16 @@ const mensagensOrdered = computed(() => {
   const list = [...mensagens.value]
   return list.sort((a, b) => a.id - b.id)
 })
+
+function scrollMsgsToBottom(): void {
+  void nextTick(() => {
+    const el = msgScrollRef.value
+    if (!el) {
+      return
+    }
+    el.scrollTop = el.scrollHeight
+  })
+}
 
 function filaLabel(fila: ChatConversaRow['fila']): string {
   if (fila === 'comercial') {
@@ -498,6 +508,7 @@ async function selectConversa(id: number) {
     selectedConversa.value = null
   } finally {
     loadingMsgs.value = false
+    scrollMsgsToBottom()
   }
 }
 
@@ -670,6 +681,17 @@ watch(selectedId, (v) => {
   }
 })
 
+watch(
+  () => {
+    const list = mensagensOrdered.value
+    const last = list[list.length - 1]
+    return last?.id ?? 0
+  },
+  () => {
+    scrollMsgsToBottom()
+  },
+)
+
 function attachConvSubscription(id: number) {
   if (unsubConv) {
     unsubConv()
@@ -683,6 +705,7 @@ function attachConvSubscription(id: number) {
     if (!mensagens.value.some((x) => x.id === msg.id)) {
       mensagens.value.push(msg)
     }
+    scrollMsgsToBottom()
   })
 }
 

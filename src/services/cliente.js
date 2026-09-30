@@ -147,8 +147,10 @@ export const clienteService = {
     return axios.post(`${paymentApiUrl}/api/create-nf`, {
       id_user: 1,
       clientIdConexa: data.clientIdConexa,
+      cliente_id: data.cliente_id,
       transaction_id: data.transaction_id,
       amount: parseFloat(data.amount),
+      data_pagamento: data.data_pagamento,
     })
   },
 

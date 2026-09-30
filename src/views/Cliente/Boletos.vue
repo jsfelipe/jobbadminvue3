@@ -260,17 +260,16 @@ const nfStatusInterval = ref(null)
 
 const id = computed(() => route.params.id)
 
-const isStatusFinal = (status) => {
+const motivoEhSerieRps = (motivo) => String(motivo || '').includes('GW3001')
+
+const isStatusFinal = (status, motivo) => {
   if (!status) return false
   const s = String(status)
-  return s === 'Negada' || s === 'Negado' || s === 'Autorizada' || s === 'Autorizado' || s === 'Cancelado' || s === 'Erro'
+  if ((s === 'Negada' || s === 'Negado') && motivoEhSerieRps(motivo)) return false
+  return s === 'Negada' || s === 'Negado' || s === 'Autorizada' || s === 'Autorizado' || s === 'Cancelado' || s === 'Cancelada' || s === 'Erro'
 }
 
-const mostrarAguardeStatus = computed(() => {
-  if (nfStatusLoading.value) return true
-  if (!nfStatusData.value) return false
-  return !isStatusFinal(nfStatusData.value.nf_status)
-})
+const mostrarAguardeStatus = computed(() => nfStatusLoading.value && !nfStatusData.value)
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -315,30 +314,37 @@ const handleDelete = async (transaction_id) => {
 const handleNF = async (transaction) => {
   loading.value = true
   try {
-    const resposta = await clienteService.createNF(transaction)
+    const resposta = await clienteService.createNF({
+      ...transaction,
+      cliente_id: id.value,
+    })
 
-    if (resposta.data && resposta.data.status === 'already_exists') {
+    const body = resposta.data || {}
+    const payload = body.data || null
+
+    if (body.status === 'already_exists') {
       ElMessage.warning(
-        resposta.data.message || 'Já existe nota fiscal autorizada para esta transação. Não será criada novamente.'
+        body.message || 'Já existe nota fiscal autorizada para esta transação. Não será criada novamente.'
       )
       return
     }
 
-    if (resposta.data && resposta.data.status === 'success' && resposta.data.data) {
-      nfId.value = resposta.data.data.nfeId || resposta.data.data.nf_id || null
-      nfTransactionId.value = transaction.transaction_id
+    if (payload && (payload.transaction_id || payload.nf_id || payload.nfeId)) {
+      nfId.value = payload.nfeId || payload.nf_id || null
+      nfTransactionId.value = payload.transaction_id || transaction.transaction_id
+      nfStatusData.value = payload.nf_status ? payload : null
       DialogStatusNF.value = true
       iniciarConsultaStatusNF()
-    } else {
-      ElMessage({
-        message:
-          resposta.data && resposta.data.message
-            ? resposta.data.message
-            : 'NF solicitada, mas não foi possível acompanhar o status automaticamente.',
-        type: resposta.data && resposta.data.status === 'error' ? 'error' : 'warning',
-        duration: 5000,
-      })
+      return
     }
+
+    ElMessage({
+      message: body.message
+        ? body.message
+        : 'NF solicitada, mas não foi possível acompanhar o status automaticamente.',
+      type: body.status === 'error' ? 'error' : 'warning',
+      duration: 5000,
+    })
   } catch (error) {
     console.error('Erro ao criar NF:', error)
     ElMessage({
@@ -372,17 +378,10 @@ const consultarStatusNF = async () => {
 
     if (resposta.data && resposta.data.status === 'success' && resposta.data.data) {
       nfStatusData.value = resposta.data.data
+      nfStatusError.value = null
       nfStatusLoading.value = false
 
-      // Se estiver autorizado, cancelado ou erro, parar polling
-      if (
-        nfStatusData.value.nf_status === 'Autorizado' ||
-        nfStatusData.value.nf_status === 'Autorizada' ||
-        nfStatusData.value.nf_status === 'Cancelado' ||
-        nfStatusData.value.nf_status === 'Erro' ||
-        nfStatusData.value.nf_status === 'Negado' ||
-        nfStatusData.value.nf_status === 'Negada'
-      ) {
+      if (isStatusFinal(nfStatusData.value.nf_status, nfStatusData.value.nf_motivo_status)) {
         pararConsultaStatusNF()
 
         if (nfStatusData.value.nf_status === 'Autorizado' || nfStatusData.value.nf_status === 'Autorizada') {
