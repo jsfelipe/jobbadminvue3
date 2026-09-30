@@ -128,7 +128,7 @@
             </el-button>
           </div>
 
-          <div class="flex gap-4">
+          <div v-if="!notaTravada(notaSelecionada)" class="flex gap-4">
             <el-button
               type="primary"
               @click="consultarStatusNF"
@@ -200,6 +200,9 @@ const id = computed(() => route.params.id)
 
 const isAutorizada = (status) =>
   status === 'Autorizada' || status === 'Autorizado'
+
+const notaTravada = (nota) =>
+  isAutorizada(nota?.nf_status) && !!String(nota?.nf_link_pdf || '').trim()
 
 const pararPolling = () => {
   if (pollingInterval.value) {
@@ -286,7 +289,7 @@ const abrirModalDetalhes = (nota) => {
 }
 
 const consultarStatusNF = async () => {
-  if (!notaSelecionada.value) return
+  if (!notaSelecionada.value || notaTravada(notaSelecionada.value)) return
   
   consultandoStatus.value = true
   try {

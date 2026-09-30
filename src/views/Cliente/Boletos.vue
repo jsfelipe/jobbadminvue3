@@ -64,7 +64,7 @@
               {{ formatCurrency(scope.row.amount) }}
             </template>
           </el-table-column>
-          <el-table-column label="Opções" width="200">
+          <el-table-column label="Opções" width="220">
             <template #default="scope">
               <span v-if="scope.row.status !== 'paid' && scope.row.status_txt !== 'Pago'">
                 <el-button
@@ -88,7 +88,31 @@
                 </el-button>
               </span>
               <span v-else>
-                <el-button size="small" type="success" @click="handleNF(scope.row)">
+                <el-button
+                  v-if="notaNegada(scope.row)"
+                  size="small"
+                  type="danger"
+                  @click="avisarSuporteNF"
+                >
+                  NF negada
+                </el-button>
+                <el-button
+                  v-else-if="notaComPdf(scope.row)"
+                  size="small"
+                  type="primary"
+                  @click="abrirPdfNF(scope.row)"
+                >
+                  PDF
+                </el-button>
+                <el-button
+                  v-else-if="notaExistente(scope.row)"
+                  size="small"
+                  type="warning"
+                  @click="acompanharNF(scope.row)"
+                >
+                  Ver NF
+                </el-button>
+                <el-button v-else size="small" type="success" @click="handleNF(scope.row)">
                   Criar NF
                 </el-button>
               </span>
@@ -137,7 +161,11 @@
             <span v-if="nfStatusData.nf_motivo_status">{{ nfStatusData.nf_motivo_status }}</span>
           </div>
 
-          <div v-if="nfStatusData.nf_status === 'Autorizado' || nfStatusData.nf_status === 'Autorizada'" class="mt-4">
+          <div v-if="notaStatusNegada(nfStatusData)" class="mt-4 text-sm text-red-700 dark:text-red-300">
+            Nota fiscal negada. Fale com o suporte.
+          </div>
+
+          <div v-if="notaStatusAutorizada(nfStatusData)" class="mt-4">
             <h5 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Nota Fiscal Autorizada!
             </h5>
@@ -145,8 +173,10 @@
               <el-button
                 v-if="nfStatusData.nf_link_pdf"
                 type="primary"
+                tag="a"
                 :href="nfStatusData.nf_link_pdf"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 <i class="fas fa-file-pdf"></i> Baixar PDF
               </el-button>
@@ -260,12 +290,19 @@ const nfStatusInterval = ref(null)
 
 const id = computed(() => route.params.id)
 
-const motivoEhSerieRps = (motivo) => String(motivo || '').includes('GW3001')
+const notaStatusNegada = (nf) => {
+  const s = String(nf?.nf_status || '')
+  return s === 'Negada' || s === 'Negado'
+}
 
-const isStatusFinal = (status, motivo) => {
+const notaStatusAutorizada = (nf) => {
+  const s = String(nf?.nf_status || '')
+  return s === 'Autorizada' || s === 'Autorizado'
+}
+
+const isStatusFinal = (status) => {
   if (!status) return false
   const s = String(status)
-  if ((s === 'Negada' || s === 'Negado') && motivoEhSerieRps(motivo)) return false
   return s === 'Negada' || s === 'Negado' || s === 'Autorizada' || s === 'Autorizado' || s === 'Cancelado' || s === 'Cancelada' || s === 'Erro'
 }
 
@@ -311,6 +348,59 @@ const handleDelete = async (transaction_id) => {
   }
 }
 
+const notaNegada = (row) => notaStatusNegada(row?.nf)
+
+const notaComPdf = (row) => {
+  const nf = row?.nf
+  if (!nf || notaNegada(row)) return false
+  return notaStatusAutorizada(nf) || !!nf.nf_link_pdf
+}
+
+const notaExistente = (row) => {
+  const nf = row?.nf
+  if (!nf || notaNegada(row) || notaComPdf(row)) return false
+  return !!nf.nf_id || Number(nf.status_nf_solicitada) >= 2
+}
+
+const avisarSuporteNF = () => {
+  ElMessage.warning('Nota fiscal negada. Fale com o suporte.')
+}
+
+const abrirPdfNF = async (row) => {
+  let link = row?.nf?.nf_link_pdf || ''
+  if (!link) {
+    try {
+      const resposta = await clienteService.consultarStatusNF(row.nf?.nf_id, row.transaction_id, id.value)
+      link = resposta?.data?.data?.nf_link_pdf || ''
+      if (resposta?.data?.data) {
+        row.nf = { ...row.nf, ...resposta.data.data }
+      }
+    } catch (error) {
+      link = ''
+    }
+  }
+
+  if (notaStatusNegada(row?.nf)) {
+    avisarSuporteNF()
+    return
+  }
+
+  if (!link) {
+    ElMessage.warning('PDF da nota ainda não está disponível.')
+    return
+  }
+
+  window.open(link, '_blank', 'noopener')
+}
+
+const acompanharNF = (row) => {
+  nfId.value = row?.nf?.nf_id || null
+  nfTransactionId.value = row.transaction_id
+  nfStatusData.value = row.nf || null
+  DialogStatusNF.value = true
+  iniciarConsultaStatusNF()
+}
+
 const handleNF = async (transaction) => {
   loading.value = true
   try {
@@ -326,6 +416,23 @@ const handleNF = async (transaction) => {
       ElMessage.warning(
         body.message || 'Já existe nota fiscal autorizada para esta transação. Não será criada novamente.'
       )
+      return
+    }
+
+    if (payload?.acao === 'suporte' || notaStatusNegada(payload)) {
+      avisarSuporteNF()
+      listarBoletos(id.value)
+      return
+    }
+
+    if (payload?.acao === 'pdf' || notaStatusAutorizada(payload)) {
+      const link = payload?.nf_link_pdf
+      if (link) {
+        window.open(link, '_blank', 'noopener')
+      } else {
+        ElMessage.warning('PDF da nota ainda não está disponível.')
+      }
+      listarBoletos(id.value)
       return
     }
 
@@ -381,8 +488,9 @@ const consultarStatusNF = async () => {
       nfStatusError.value = null
       nfStatusLoading.value = false
 
-      if (isStatusFinal(nfStatusData.value.nf_status, nfStatusData.value.nf_motivo_status)) {
+      if (isStatusFinal(nfStatusData.value.nf_status)) {
         pararConsultaStatusNF()
+        listarBoletos(id.value)
 
         if (nfStatusData.value.nf_status === 'Autorizado' || nfStatusData.value.nf_status === 'Autorizada') {
           ElMessage({
@@ -485,11 +593,23 @@ const copiarLinkAsaas = async () => {
 const listarBoletos = async (idCliente) => {
   loading.value = true
   try {
-    const resposta = await clienteService.listarboletos(idCliente)
-    // Limita a 10 registros (igual ao projeto antigo)
+    const [resposta, notasResp] = await Promise.all([
+      clienteService.listarboletos(idCliente),
+      clienteService.getNotas(idCliente).catch(() => ({ data: { data: [] } })),
+    ])
+    const notas = notasResp?.data?.data || notasResp?.data || []
+    const notaPorTransacao = {}
+    if (Array.isArray(notas)) {
+      notas.forEach((nota) => {
+        if (nota?.transaction_id != null) {
+          notaPorTransacao[String(nota.transaction_id)] = nota
+        }
+      })
+    }
     const arrResult = (resposta.data || []).slice(0, 10).map((item) => ({
       ...item,
       updated_at: formatDate(item.updated_at),
+      nf: notaPorTransacao[String(item.transaction_id)] || null,
     }))
     tableData.value = arrResult
   } catch (error) {
