@@ -363,7 +363,7 @@ const notaExistente = (row) => {
 }
 
 const avisarSuporteNF = () => {
-  ElMessage.warning('Nota fiscal negada. Fale com o suporte.')
+  ElMessage.warning('Nota fiscal negada. Abra Notas Fiscais do cliente e use Retentar após corrigir a série RPS.')
 }
 
 const abrirPdfNF = async (row) => {
@@ -419,7 +419,7 @@ const handleNF = async (transaction) => {
       return
     }
 
-    if (payload?.acao === 'suporte' || notaStatusNegada(payload)) {
+    if (payload?.acao === 'suporte' || payload?.acao === 'retentar' || notaStatusNegada(payload)) {
       avisarSuporteNF()
       listarBoletos(id.value)
       return

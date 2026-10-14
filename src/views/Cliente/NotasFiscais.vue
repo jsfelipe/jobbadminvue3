@@ -31,6 +31,12 @@
             <template #default="scope">
               {{ scope.row.nf_status }}
               {{ scope.row.status_nf_solicitada == 1 ? 'Solicitada' : '' }}
+              <span
+                v-if="scope.row.tentativas_count > 1"
+                class="ml-1 text-xs text-gray-500"
+              >
+                ({{ scope.row.tentativas_count }} tent.)
+              </span>
             </template>
           </el-table-column>
           <el-table-column label="Valor">
@@ -38,7 +44,7 @@
               {{ formatCurrency(scope.row.nf_valor_total) }}
             </template>
           </el-table-column>
-          <el-table-column label="Opções" width="200">
+          <el-table-column label="Opções" width="240">
             <template #default="scope">
               <div class="flex items-center gap-1">
                 <el-button
@@ -48,6 +54,17 @@
                   circle
                 >
                   <i class="fas fa-info-circle"></i>
+                </el-button>
+                <el-button
+                  v-if="isNegada(scope.row.nf_status)"
+                  size="small"
+                  type="warning"
+                  circle
+                  title="Retentar emissão"
+                  :loading="retentando && notaEmRetry === scope.row.transaction_id"
+                  @click="confirmarRetentar(scope.row)"
+                >
+                  <i class="fas fa-redo"></i>
                 </el-button>
                 <a
                   v-if="scope.row.nf_link_pdf"
@@ -128,7 +145,7 @@
             </el-button>
           </div>
 
-          <div v-if="!notaTravada(notaSelecionada)" class="flex gap-4">
+          <div v-if="!notaTravada(notaSelecionada)" class="flex flex-wrap gap-4">
             <el-button
               type="primary"
               @click="consultarStatusNF"
@@ -136,6 +153,15 @@
             >
               <i class="fas fa-sync-alt mr-2"></i>
               Consultar novamente via API
+            </el-button>
+            <el-button
+              v-if="isNegada(notaSelecionada.nf_status)"
+              type="warning"
+              :loading="retentando"
+              @click="confirmarRetentar(notaSelecionada)"
+            >
+              <i class="fas fa-redo mr-2"></i>
+              Retentar emissão
             </el-button>
           </div>
 
@@ -172,6 +198,29 @@
               Ver na Prefeitura
             </a>
           </div>
+
+          <div v-if="historicoTentativas.length" class="mt-4">
+            <h3 class="mb-2 text-lg font-semibold">Histórico de tentativas</h3>
+            <el-table :data="historicoTentativas" size="small" stripe>
+              <el-table-column label="Tent." width="70">
+                <template #default="scope">{{ scope.row.tentativa }}</template>
+              </el-table-column>
+              <el-table-column label="Data" min-width="140">
+                <template #default="scope">{{ formatDate(scope.row.created_at) }}</template>
+              </el-table-column>
+              <el-table-column label="Status" min-width="120">
+                <template #default="scope">{{ scope.row.nf_status }}</template>
+              </el-table-column>
+              <el-table-column label="NF ID" min-width="120">
+                <template #default="scope">{{ scope.row.nf_id || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="Motivo" min-width="220">
+                <template #default="scope">
+                  <span class="whitespace-pre-line text-xs">{{ scope.row.nf_motivo_status || '-' }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
         </div>
       </el-dialog>
     </div>
@@ -183,7 +232,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { clienteService } from '@/services/cliente'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import numbro from 'numbro'
 
 const route = useRoute()
@@ -193,6 +242,9 @@ const tableData = ref([])
 const dialogDetalhesVisible = ref(false)
 const notaSelecionada = ref(null)
 const consultandoStatus = ref(false)
+const retentando = ref(false)
+const notaEmRetry = ref(null)
+const historicoTentativas = ref([])
 const pollingInterval = ref(null)
 const INTERVALO_POLLING_MS = 5000
 
@@ -200,6 +252,9 @@ const id = computed(() => route.params.id)
 
 const isAutorizada = (status) =>
   status === 'Autorizada' || status === 'Autorizado'
+
+const isNegada = (status) =>
+  status === 'Negada' || status === 'Negado'
 
 const notaTravada = (nota) =>
   isAutorizada(nota?.nf_status) && !!String(nota?.nf_link_pdf || '').trim()
@@ -274,10 +329,23 @@ const listarNotas = async (idCliente) => {
   }
 }
 
-const abrirModalDetalhes = (nota) => {
+const carregarHistorico = async (transactionId) => {
+  historicoTentativas.value = []
+  if (!transactionId) return
+  try {
+    const response = await clienteService.historicoNF(transactionId)
+    const items = response.data?.data || response.data || []
+    historicoTentativas.value = Array.isArray(items) ? items : []
+  } catch (error) {
+    console.error('Erro ao carregar histórico NF:', error)
+  }
+}
+
+const abrirModalDetalhes = async (nota) => {
   pararPolling()
   notaSelecionada.value = nota
   dialogDetalhesVisible.value = true
+  await carregarHistorico(nota?.transaction_id)
   if (nota?.nf_status === 'EmProcessoDeAutorizacao') {
     consultarStatusNF()
     pollingInterval.value = setInterval(() => {
@@ -285,6 +353,56 @@ const abrirModalDetalhes = (nota) => {
       if (notaSelecionada.value.nf_status !== 'EmProcessoDeAutorizacao') return
       consultarStatusNF()
     }, INTERVALO_POLLING_MS)
+  }
+}
+
+const confirmarRetentar = async (nota) => {
+  if (!nota?.transaction_id || !isNegada(nota.nf_status)) return
+  try {
+    await ElMessageBox.confirm(
+      'Isso ajusta a série RPS na eNotas (se necessário) e reenvia a NFS-e. A tentativa atual ficará no histórico. Continuar?',
+      'Retentar emissão',
+      {
+        confirmButtonText: 'Retentar',
+        cancelButtonText: 'Cancelar',
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+
+  retentando.value = true
+  notaEmRetry.value = nota.transaction_id
+  try {
+    const response = await clienteService.retentarNF(nota.transaction_id, id.value)
+    if (response.data?.status === 'success') {
+      ElMessage.success('Retentativa enviada com sucesso')
+      await listarNotas(id.value)
+      if (dialogDetalhesVisible.value && response.data?.data) {
+        notaSelecionada.value = {
+          ...nota,
+          ...response.data.data,
+          updated_at: formatDate(response.data.data.updated_at || nota.updated_at),
+        }
+        if (Array.isArray(response.data.tentativas)) {
+          historicoTentativas.value = response.data.tentativas
+        } else {
+          await carregarHistorico(nota.transaction_id)
+        }
+        if (notaSelecionada.value.nf_status === 'EmProcessoDeAutorizacao') {
+          consultarStatusNF()
+        }
+      }
+    } else {
+      ElMessage.error(response.data?.message || 'Falha ao retentar emissão')
+    }
+  } catch (error) {
+    console.error('Erro ao retentar NF:', error)
+    ElMessage.error(error?.response?.data?.message || 'Erro ao retentar emissão')
+  } finally {
+    retentando.value = false
+    notaEmRetry.value = null
   }
 }
 
