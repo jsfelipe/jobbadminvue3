@@ -356,9 +356,19 @@
 
         <!-- Clientes em risco de abandono (10 dias ou mais sem acesso) -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-          <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Clientes em risco de abandono
-          </h4>
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Clientes em risco de abandono
+            </h4>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="exportandoRisco"
+              @click="exportarExcel('risco-abandono')"
+            >
+              {{ exportandoRisco ? `Exportando ${progressoRisco.completed}/${progressoRisco.total || '…'}` : 'Exportar Excel' }}
+            </button>
+          </div>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
             Sem acesso há 10 dias ou mais. Máx. 30.
           </p>
@@ -411,9 +421,19 @@
 
         <!-- Clientes inadimplentes -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-          <h4 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Clientes inadimplentes
-          </h4>
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Clientes inadimplentes
+            </h4>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="exportandoInadimplentes"
+              @click="exportarExcel('inadimplentes')"
+            >
+              {{ exportandoInadimplentes ? `Exportando ${progressoInadimplentes.completed}/${progressoInadimplentes.total || '…'}` : 'Exportar Excel' }}
+            </button>
+          </div>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
             Vencimento em atraso há mais de 15 dias. Ordenado por vencimento (mais atrasados primeiro). Máx. 30.
           </p>
@@ -456,6 +476,75 @@
                       rel="noopener noreferrer"
                       class="inline-flex items-center rounded p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30"
                       title="Enviar mensagem no WhatsApp para o cliente"
+                    >
+                      <i class="fab fa-whatsapp text-xl" aria-hidden="true"></i>
+                    </a>
+                    <span v-else class="text-gray-400 dark:text-gray-500" title="Telefone não cadastrado ou inválido">—</span>
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.responsavel || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Clientes versão antiga em dia -->
+        <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Clientes versão antiga (em dia)
+            </h4>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="exportandoVersaoAntiga"
+              @click="exportarExcel('versao-antiga')"
+            >
+              {{ exportandoVersaoAntiga ? `Exportando ${progressoVersaoAntiga.completed}/${progressoVersaoAntiga.total || '…'}` : 'Exportar Excel' }}
+            </button>
+          </div>
+          <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
+            tipo_jobb = V, tipo_cliente = C, vencimento &gt; (hoje − 1 mês). Máx. 30.
+          </p>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Nome</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Domínio</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">E-mail</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Vencimento</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Último acesso</th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">WhatsApp</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Responsável</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                <tr v-if="loadingVersaoAntiga" class="text-center text-gray-500 dark:text-gray-400">
+                  <td colspan="7" class="px-4 py-6">Carregando...</td>
+                </tr>
+                <tr v-else-if="!clientesVersaoAntiga.length" class="text-center text-gray-500 dark:text-gray-400">
+                  <td colspan="7" class="px-4 py-6">Nenhum cliente versão antiga em dia.</td>
+                </tr>
+                <tr
+                  v-else
+                  v-for="(row, idx) in clientesVersaoAntiga"
+                  :key="idx"
+                  class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                >
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">{{ truncateNome(row.nome) }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ row.dominio || '—' }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ primeiroEmail(row.email) }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.vencimento) }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(row.ultimo_acesso) }}</td>
+                  <td class="whitespace-nowrap px-4 py-2 text-right">
+                    <a
+                      v-if="whatsappUrl(row.telefone)"
+                      :href="whatsappUrl(row.telefone)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center rounded p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30"
+                      title="Abrir WhatsApp"
                     >
                       <i class="fab fa-whatsapp text-xl" aria-hidden="true"></i>
                     </a>
@@ -592,6 +681,57 @@ const setupData = ref([])
 const primeirasData = ref([])
 const clientesSemUso = ref([])
 const loadingSemUso = ref(true)
+const clientesVersaoAntiga = ref([])
+const loadingVersaoAntiga = ref(true)
+const exportandoRisco = ref(false)
+const exportandoInadimplentes = ref(false)
+const exportandoVersaoAntiga = ref(false)
+const jobIdRisco = ref('')
+const jobIdInadimplentes = ref('')
+const jobIdVersaoAntiga = ref('')
+const progressoRisco = ref({ total: 0, completed: 0, status: '' })
+const progressoInadimplentes = ref({ total: 0, completed: 0, status: '' })
+const progressoVersaoAntiga = ref({ total: 0, completed: 0, status: '' })
+let pollingRisco = null
+let pollingInadimplentes = null
+let pollingVersaoAntiga = null
+let timeoutRisco = null
+let timeoutInadimplentes = null
+let timeoutVersaoAntiga = null
+
+function getExportRefs(tipo) {
+  if (tipo === 'risco-abandono') {
+    return {
+      exportando: exportandoRisco,
+      jobId: jobIdRisco,
+      progresso: progressoRisco,
+      setPolling: (v) => { pollingRisco = v },
+      getPolling: () => pollingRisco,
+      setTimeoutRef: (v) => { timeoutRisco = v },
+      getTimeoutRef: () => timeoutRisco,
+    }
+  }
+  if (tipo === 'versao-antiga') {
+    return {
+      exportando: exportandoVersaoAntiga,
+      jobId: jobIdVersaoAntiga,
+      progresso: progressoVersaoAntiga,
+      setPolling: (v) => { pollingVersaoAntiga = v },
+      getPolling: () => pollingVersaoAntiga,
+      setTimeoutRef: (v) => { timeoutVersaoAntiga = v },
+      getTimeoutRef: () => timeoutVersaoAntiga,
+    }
+  }
+  return {
+    exportando: exportandoInadimplentes,
+    jobId: jobIdInadimplentes,
+    progresso: progressoInadimplentes,
+    setPolling: (v) => { pollingInadimplentes = v },
+    getPolling: () => pollingInadimplentes,
+    setTimeoutRef: (v) => { timeoutInadimplentes = v },
+    getTimeoutRef: () => timeoutInadimplentes,
+  }
+}
 const crescimentoBaseData = ref([])
 const crescimentoBaseDataAnoAnterior = ref([])
 const crescimentoBaseCurrentMonth = ref(12)
@@ -1109,6 +1249,7 @@ async function carregarDashboard() {
   loadingSemUso.value = true
   loadingTopAcesso.value = true
   loadingRisco.value = true
+  loadingVersaoAntiga.value = true
   if (isPerfil1.value) loadingTopLancamentos.value = true
 
   const promises = [graficoLeadsPorMes(), dadosSetup()]
@@ -1166,6 +1307,17 @@ async function carregarDashboard() {
     clientesRiscoAbandono.value = []
   } finally {
     loadingRisco.value = false
+  }
+
+  try {
+    const res = await dashboardAdmin.clientesVersaoAntiga()
+    const list = res.data?.data ?? res.data ?? []
+    clientesVersaoAntiga.value = Array.isArray(list) ? list : []
+  } catch (err) {
+    console.error('Erro ao carregar clientes versão antiga:', err)
+    clientesVersaoAntiga.value = []
+  } finally {
+    loadingVersaoAntiga.value = false
   }
 
   if (isPerfil1.value && !isPerfil4.value) {
@@ -1253,6 +1405,148 @@ function onDashboardRefresh() {
   limparCacheERecarregar()
 }
 
+function baixarBlobExcel(data, prefixo) {
+  if (data.type && data.type.indexOf('json') !== -1) {
+    return false
+  }
+  const blob = new Blob([data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${prefixo}-${new Date().toISOString().slice(0, 10)}.xlsx`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+  return true
+}
+
+function pararPollingExport(tipo) {
+  const ctx = getExportRefs(tipo)
+  const polling = ctx.getPolling()
+  if (polling) {
+    clearInterval(polling)
+    ctx.setPolling(null)
+  }
+  const timeoutRef = ctx.getTimeoutRef()
+  if (timeoutRef) {
+    clearTimeout(timeoutRef)
+    ctx.setTimeoutRef(null)
+  }
+}
+
+async function baixarExportExcel(tipo, tentativa = 0) {
+  const ctx = getExportRefs(tipo)
+  if (!ctx.jobId.value) {
+    ElMessage.error('Job de exportação não encontrado')
+    return
+  }
+  try {
+    const response = await dashboardAdmin.exportarClientesDownload(ctx.jobId.value)
+    if (!baixarBlobExcel(response.data, `clientes-${tipo}`)) {
+      ElMessage.error('Arquivo de exportação inválido')
+      return
+    }
+    ElMessage.success('Exportação concluída!')
+  } catch (error) {
+    if (error.response && error.response.status === 404 && tentativa < 5) {
+      setTimeout(() => baixarExportExcel(tipo, tentativa + 1), 700)
+      return
+    }
+    console.error('Erro ao baixar exportação:', error)
+    ElMessage.error('Erro ao baixar arquivo de exportação')
+  }
+}
+
+function verificarProgressoExport(tipo) {
+  const ctx = getExportRefs(tipo)
+  if (!ctx.jobId.value) {
+    pararPollingExport(tipo)
+    return
+  }
+  dashboardAdmin
+    .exportarClientesProgresso(ctx.jobId.value)
+    .then((response) => {
+      const data = response.data
+      ctx.progresso.value = {
+        total: parseInt(data.total, 10) || 0,
+        completed: parseInt(data.completed, 10) || 0,
+        status: data.status || 'processing',
+      }
+      if (data.status === 'completed') {
+        pararPollingExport(tipo)
+        ctx.exportando.value = false
+        ctx.progresso.value.completed = ctx.progresso.value.total
+        baixarExportExcel(tipo)
+      }
+    })
+    .catch((error) => {
+      console.error('Erro ao verificar progresso:', error)
+      if (error.response?.status === 404) {
+        pararPollingExport(tipo)
+        ctx.exportando.value = false
+        ElMessage.error('Job não encontrado ou expirado')
+      }
+    })
+}
+
+function iniciarPollingExport(tipo) {
+  const ctx = getExportRefs(tipo)
+  pararPollingExport(tipo)
+  const timeoutId = setTimeout(() => {
+    pararPollingExport(tipo)
+    ctx.exportando.value = false
+    ElMessage.warning('Tempo máximo de processamento excedido')
+  }, 600000)
+
+  const intervalId = setInterval(() => {
+    if (!ctx.exportando.value) {
+      pararPollingExport(tipo)
+      return
+    }
+    verificarProgressoExport(tipo)
+  }, 1000)
+
+  ctx.setTimeoutRef(timeoutId)
+  ctx.setPolling(intervalId)
+  verificarProgressoExport(tipo)
+}
+
+async function exportarExcel(tipo) {
+  const ctx = getExportRefs(tipo)
+  ctx.exportando.value = true
+  ctx.progresso.value = { total: 0, completed: 0, status: 'processing' }
+
+  try {
+    const response = await dashboardAdmin.exportarClientes(tipo)
+    if (!response.data?.job_id) {
+      ctx.exportando.value = false
+      ElMessage.error('Resposta inválida ao iniciar exportação')
+      return
+    }
+
+    ctx.jobId.value = response.data.job_id
+    ctx.progresso.value.total = response.data.total || 0
+
+    ElMessage.success('Exportação iniciada')
+
+    if (response.data.status === 'completed') {
+      ctx.exportando.value = false
+      baixarExportExcel(tipo)
+      return
+    }
+
+    iniciarPollingExport(tipo)
+  } catch (error) {
+    ctx.exportando.value = false
+    console.error('Erro ao exportar:', error)
+    const msg = error.response?.data?.error || 'Erro ao iniciar exportação'
+    ElMessage.error(msg)
+  }
+}
+
 onMounted(() => {
   const d = new Date()
   const mesAno = `${d.getFullYear()}-${d.getMonth() + 1}`
@@ -1265,6 +1559,9 @@ onMounted(() => {
 })
 onUnmounted(() => {
   window.removeEventListener('dashboard-refresh', onDashboardRefresh)
+  pararPollingExport('risco-abandono')
+  pararPollingExport('inadimplentes')
+  pararPollingExport('versao-antiga')
 })
 </script>
 

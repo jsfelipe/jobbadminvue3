@@ -84,7 +84,18 @@ export const dashboardAdmin = {
   topClientesAcesso: (page = 1, per_page = 10) =>
     api.get('/dashboard/top-clientes-acesso', { params: { page, per_page } }),
 
-  clientesRiscoAbandono: () => cachedGet('clientesRiscoAbandono', '/dashboard/clientes-risco-abandono')
+  clientesRiscoAbandono: () => cachedGet('clientesRiscoAbandono', '/dashboard/clientes-risco-abandono'),
+
+  clientesVersaoAntiga: () => cachedGet('clientesVersaoAntiga', '/dashboard/clientes-versao-antiga'),
+
+  /** Exportação Excel async: tipo = risco-abandono | inadimplentes | versao-antiga. Sem cache. */
+  exportarClientes: (tipo) => api.post(`/dashboard/exportar-clientes/${tipo}`),
+
+  exportarClientesProgresso: (jobId) =>
+    api.get(`/dashboard/exportar-clientes/progresso/${jobId}`),
+
+  exportarClientesDownload: (jobId) =>
+    api.get(`/dashboard/exportar-clientes/download/${jobId}`, { responseType: 'blob' }),
 }
 
 /** Remove todo o cache do dashboard (para forçar nova carga da API). */
