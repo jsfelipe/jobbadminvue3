@@ -56,7 +56,7 @@
                   <i class="fas fa-info-circle"></i>
                 </el-button>
                 <el-button
-                  v-if="isNegada(scope.row.nf_status)"
+                  v-if="podeRetentar(scope.row)"
                   size="small"
                   type="warning"
                   circle
@@ -155,7 +155,7 @@
               Consultar novamente via API
             </el-button>
             <el-button
-              v-if="isNegada(notaSelecionada.nf_status)"
+              v-if="podeRetentar(notaSelecionada)"
               type="warning"
               :loading="retentando"
               @click="confirmarRetentar(notaSelecionada)"
@@ -255,6 +255,13 @@ const isAutorizada = (status) =>
 
 const isNegada = (status) =>
   status === 'Negada' || status === 'Negado'
+
+const podeRetentar = (nota) => {
+  if (!nota) return false
+  if (isNegada(nota.nf_status)) return true
+  const motivo = String(nota.nf_motivo_status || '')
+  return motivo.includes('GW3001') && !isAutorizada(nota.nf_status) && !nota.nf_link_pdf
+}
 
 const notaTravada = (nota) =>
   isAutorizada(nota?.nf_status) && !!String(nota?.nf_link_pdf || '').trim()
@@ -357,7 +364,7 @@ const abrirModalDetalhes = async (nota) => {
 }
 
 const confirmarRetentar = async (nota) => {
-  if (!nota?.transaction_id || !isNegada(nota.nf_status)) return
+  if (!nota?.transaction_id || !podeRetentar(nota)) return
   try {
     await ElMessageBox.confirm(
       'Isso ajusta a série RPS na eNotas (se necessário) e reenvia a NFS-e. A tentativa atual ficará no histórico. Continuar?',
