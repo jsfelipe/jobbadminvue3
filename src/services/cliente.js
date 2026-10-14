@@ -214,7 +214,7 @@ export const clienteService = {
     const axios = (await import('axios')).default
     const paymentApiUrl = import.meta.env.VITE_PAYMENT_API ||
       (import.meta.env.PROD ? 'https://paymentv2.sistemajobb.com.br' : 'http://localhost:9093')
-    return axios.get(`${paymentApiUrl}/api/nfes/historico`, {
+    return axios.get(`${paymentApiUrl}/api/nfes/tentativas`, {
       params: {
         transaction_id: transactionId,
         id_user: 'J',
