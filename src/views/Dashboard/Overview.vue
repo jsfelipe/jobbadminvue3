@@ -435,7 +435,7 @@
             </button>
           </div>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Vencimento em atraso há mais de 15 dias. Ordenado por vencimento (mais atrasados primeiro). Máx. 30.
+            tipo_cliente = C, vencimento atrasado &gt; 15 dias, último pagamento nos últimos 6 meses. Máx. 30.
           </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
