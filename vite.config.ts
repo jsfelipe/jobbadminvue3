@@ -20,6 +20,9 @@ export default defineConfig({
     include: ['ably', 'ably/push'],
   },
   server: {
+    host: '0.0.0.0',
+    port: 8092,
+    strictPort: true,
     proxy: {
       '/api': { target: proxyTarget, changeOrigin: true },
       '/file-manager': { target: proxyTarget, changeOrigin: true },

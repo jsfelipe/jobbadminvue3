@@ -128,6 +128,19 @@ function mapApiItemsToMenuGroups(apiItems: SidebarMenuItemApi[]): MenuGroup[] {
   })
   // Dashboard sempre como primeiro item do menu para todos os usuários
   const items = [dashboardMenuItem, ...itemsFromApi]
+  const crmItem: MenuItemWithIcon = {
+    icon: UserGroupIcon,
+    name: 'CRM',
+    path: '/admin/crm',
+  }
+  const desbloqueioIdx = items.findIndex(
+    (i) => i.name === 'Desbloqueio' || i.name.toLowerCase().includes('desbloqueio'),
+  )
+  if (desbloqueioIdx >= 0) {
+    items.splice(desbloqueioIdx + 1, 0, crmItem)
+  } else {
+    items.push(crmItem)
+  }
   return [{ title: 'Menu', items }]
 }
 
@@ -136,6 +149,7 @@ const defaultMenuItems: MenuItemWithIcon[] = [
   { icon: GridIcon, name: 'Dashboard', path: '/admin/overview' },
   { icon: UserGroupIcon, name: 'Meus Clientes', path: '/admin/clientes' },
   { icon: SettingsIcon, name: 'Desbloqueio', path: '/admin/desbloqueio' },
+  { icon: UserGroupIcon, name: 'CRM', path: '/admin/crm' },
   { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato', requiresProfile: [1, 6] },
   { icon: PieChartIcon, name: 'Vendas / Comissão', path: '/admin/vendas/comissao', requiresProfile: [1, 6] },
   { icon: PageIcon, name: 'Tickets', path: '/admin/tickets' },
