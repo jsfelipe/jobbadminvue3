@@ -14,14 +14,25 @@
             </template>
           </p>
         </div>
-        <button
-          type="button"
-          class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          :disabled="carregando"
-          @click="carregarTudo"
-        >
-          {{ carregando ? 'Atualizando...' : 'Atualizar' }}
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <router-link
+            v-if="isAdmin"
+            to="/admin/crm/relatorios"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+            title="Relatórios CRM"
+          >
+            <PieChartIcon class="h-4 w-4" />
+            Relatórios
+          </router-link>
+          <button
+            type="button"
+            class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            :disabled="carregando"
+            @click="carregarTudo"
+          >
+            {{ carregando ? 'Atualizando...' : 'Atualizar' }}
+          </button>
+        </div>
       </div>
 
       <p
@@ -44,10 +55,14 @@
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
               "
-              @click="abaAtiva = tipo"
+              @click="selecionarAba(tipo)"
             >
               {{ FILA_LABEL[tipo] }}
-              <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" :class="filaBadgeClass(tipo)">
+              <span
+                v-if="filasCarregadas[tipo]"
+                class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
+                :class="filaBadgeClass(tipo)"
+              >
                 {{ pendentes(tipo) }}
               </span>
             </button>
@@ -81,18 +96,18 @@
         <!-- Filas de contato -->
         <div v-if="abaAtiva !== 'novas_leads'" class="overflow-x-auto p-4">
           <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <CrmCounterCard label="Feitos hoje (equipe)" :value="contadores?.hoje.total ?? 0" value-class="text-emerald-600" />
-            <CrmCounterCard label="Feitos hoje (eu)" :value="contadores?.hoje.meus ?? 0" value-class="text-blue-600" />
+            <CrmCounterCard label="Feitos hoje (equipe)" :value="contadores?.hoje?.total ?? 0" value-class="text-emerald-600" />
+            <CrmCounterCard label="Feitos hoje (eu)" :value="contadores?.hoje?.meus ?? 0" value-class="text-blue-600" />
             <CrmCounterCard
               v-for="tipo in TIPOS_FILA"
               :key="tipo"
               :label="FILA_LABEL[tipo]"
-              :value="contadores?.hoje.por_fila[tipo]?.total ?? 0"
-              :sub-label="`/ ${pendentes(tipo)} pendentes`"
-              :progress="progresso(tipo)"
+              :value="contadores?.hoje?.por_fila?.[tipo]?.total ?? 0"
+              :sub-label="filasCarregadas[tipo] ? `/ ${pendentes(tipo)} pendentes` : ''"
+              :progress="filasCarregadas[tipo] ? progresso(tipo) : undefined"
               :active="abaAtiva === tipo"
               clickable
-              @click="abaAtiva = tipo"
+              @click="selecionarAba(tipo)"
             />
           </div>
 
@@ -123,7 +138,7 @@
             </button>
           </nav>
 
-          <p v-if="carregando && !filasResp" class="text-sm text-gray-500">Carregando filas...</p>
+          <p v-if="carregandoFila && !filasCarregadas[filaAtual]" class="text-sm text-gray-500">Carregando fila...</p>
           <p v-else-if="listaFiltrada.length === 0" class="py-6 text-center text-sm text-gray-500">
             Nenhum cliente em "{{ statusLabel(subAba, filaAtual) }}" nesta fila.
           </p>
@@ -501,8 +516,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useStore } from 'vuex'
 import { toast } from 'vue3-toastify'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import { PieChartIcon } from '@/icons'
 import { crmService } from '@/services/crm'
 import CrmCounterCard from './components/CrmCounterCard.vue'
 import ModalRegistrarContato from './components/ModalRegistrarContato.vue'
@@ -524,8 +541,10 @@ import {
   type ClienteFila,
   type CrmAtendimento,
   type CrmAtendimentoRegistrado,
+  type ContagemFila,
   type CrmContadores,
   type CrmFilasResponse,
+  type FilaPorStatus,
   type CrmLead,
   type CrmLeadImportProgress,
   type CrmLeadMetas,
@@ -546,7 +565,17 @@ import {
   whatsappLink,
 } from './model/crm.ui'
 
+const store = useStore()
+const isAdmin = computed(() => {
+  const data = store.state.Login?.data as { id_perfil?: number | string; id_usuario_tipo?: number | string } | undefined
+  const id = data?.id_perfil ?? data?.id_usuario_tipo
+  return Number(id) === 1
+})
+
 const filasResp = ref<CrmFilasResponse | null>(null)
+const filasCarregadas = ref<Partial<Record<TipoFila, boolean>>>({})
+const carregandoFila = ref(false)
+const leadsCarregados = ref(false)
 const subAba = ref<StatusCaso>('pendente')
 const statusAtualRegistro = ref<StatusCaso>('pendente')
 const statusInicialRegistro = ref<StatusRegistro>('aguardando_retorno')
@@ -631,7 +660,7 @@ const totalPendenteLeads = computed(() => {
 })
 
 const progresso = (tipo: TipoFila): number => {
-  const feitos = contadores.value?.hoje.por_fila[tipo]?.total ?? 0
+  const feitos = contadores.value?.hoje?.por_fila?.[tipo]?.total ?? 0
   const total = feitos + pendentes(tipo)
   return total === 0 ? 100 : Math.round((feitos / total) * 100)
 }
@@ -676,7 +705,7 @@ const carregarContadores = async () => {
 const carregarRegistrosHoje = async () => {
   const hoje = hojeIso()
   const page = await crmService.historico({ data_inicio: hoje, data_fim: hoje, per_page: 200 })
-  registrosHoje.value = page.data
+  registrosHoje.value = Array.isArray(page.data) ? page.data : []
 }
 
 const carregarMetasLeads = async () => {
@@ -700,9 +729,90 @@ const carregarLeads = async () => {
   }
 }
 
+const listasVazias = (): FilaPorStatus => ({
+  pendente: [],
+  aguardando_retorno: [],
+  em_atendimento: [],
+  resolvido: [],
+  encerrado: [],
+})
+
+const contagensVazias = (): ContagemFila => ({
+  pendente: 0,
+  aguardando_retorno: 0,
+  em_atendimento: 0,
+  resolvido: 0,
+  encerrado: 0,
+  sem_retorno: 0,
+})
+
+const aplicarFila = (resp: CrmFilasResponse) => {
+  if (!resp?.filas) {
+    throw new Error('Resposta inválida das filas')
+  }
+  if (!filasResp.value) {
+    const filas = {} as Record<TipoFila, FilaPorStatus>
+    const contagens = {} as Record<TipoFila, ContagemFila>
+    for (const t of TIPOS_FILA) {
+      filas[t] = listasVazias()
+      contagens[t] = contagensVazias()
+    }
+    filasResp.value = {
+      filas,
+      contagens,
+      prazo_retorno_padrao: resp.prazo_retorno_padrao,
+      prazo_retorno_dias_uteis: resp.prazo_retorno_dias_uteis,
+    }
+  }
+  for (const t of TIPOS_FILA) {
+    if (!resp.filas[t]) continue
+    filasResp.value.filas[t] = resp.filas[t]
+    filasResp.value.contagens[t] = resp.contagens[t]
+    filasCarregadas.value = { ...filasCarregadas.value, [t]: true }
+  }
+  filasResp.value.prazo_retorno_padrao = resp.prazo_retorno_padrao
+  filasResp.value.prazo_retorno_dias_uteis = resp.prazo_retorno_dias_uteis
+}
+
+let filaReq = 0
+
+const carregarFila = async (tipo: TipoFila) => {
+  const req = ++filaReq
+  carregandoFila.value = true
+  try {
+    aplicarFila(await crmService.filas(tipo))
+  } finally {
+    if (req === filaReq) carregandoFila.value = false
+  }
+}
+
+const carregarLeadsAba = async () => {
+  const extras = await Promise.allSettled([carregarMetasLeads(), carregarLeads()])
+  const falha = extras.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined
+  if (!falha) leadsCarregados.value = true
+  if (falha) {
+    const ax = falha.reason as { response?: { data?: { message?: string; error?: string }; status?: number } }
+    erro.value =
+      ax.response?.data?.message ||
+      ax.response?.data?.error ||
+      `Falha ao carregar leads (HTTP ${ax.response?.status ?? '?'})`
+  }
+}
+
+const selecionarAba = (aba: AbaCrm) => {
+  abaAtiva.value = aba
+  erro.value = ''
+  if (aba === 'novas_leads') {
+    if (!leadsCarregados.value) void carregarLeadsAba()
+    return
+  }
+  if (!filasCarregadas.value[aba]) void carregarFila(aba).catch(() => {
+    erro.value = 'Falha ao carregar a fila.'
+  })
+}
+
 const abrirAbaLeads = () => {
-  abaAtiva.value = 'novas_leads'
-  void Promise.all([carregarMetasLeads(), carregarLeads()])
+  selecionarAba('novas_leads')
 }
 
 const carregarTudo = async () => {
@@ -710,23 +820,17 @@ const carregarTudo = async () => {
   erro.value = ''
   try {
     if (abaAtiva.value === 'novas_leads') {
-      const extras = await Promise.allSettled([carregarMetasLeads(), carregarLeads()])
-      const falha = extras.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined
-      if (falha) {
-        const ax = falha.reason as { response?: { data?: { message?: string; error?: string }; status?: number } }
-        erro.value =
-          ax.response?.data?.message ||
-          ax.response?.data?.error ||
-          `Falha ao carregar leads (HTTP ${ax.response?.status ?? '?'})`
-      }
+      leadsCarregados.value = false
+      await carregarLeadsAba()
       return
     }
 
-    filasResp.value = await crmService.filas()
+    const tipo = abaAtiva.value
+    filasCarregadas.value = {}
     const extras = await Promise.allSettled([
+      carregarFila(tipo),
       carregarContadores(),
       carregarRegistrosHoje(),
-      carregarMetasLeads(),
     ])
     const falha = extras.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined
     if (falha) {
@@ -742,7 +846,6 @@ const carregarTudo = async () => {
       ax.response?.data?.message ||
       ax.response?.data?.error ||
       `Falha ao carregar CRM (HTTP ${ax.response?.status ?? '?'})`
-    filasResp.value = null
   } finally {
     carregando.value = false
   }
@@ -757,8 +860,10 @@ const abrirRegistro = (c: ClienteFila, statusInicial: StatusRegistro) => {
 }
 
 const recarregarFilas = async () => {
+  if (abaAtiva.value === 'novas_leads') return
+  filasCarregadas.value = {}
   try {
-    filasResp.value = await crmService.filas()
+    await carregarFila(abaAtiva.value)
   } catch {
     erro.value = 'Falha ao atualizar as filas.'
   }

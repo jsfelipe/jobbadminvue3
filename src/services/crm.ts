@@ -6,11 +6,14 @@ import type {
   CrmCasoRaw,
   CrmContadores,
   CrmFilasResponse,
+  TipoFila,
   CrmLead,
   CrmLeadImportProgress,
   CrmLeadImportStart,
   CrmLeadMetas,
   HistoricoFiltro,
+  CrmRelatorio,
+  CrmRelatorioFiltro,
   LeadsFiltro,
   OrigemLead,
   Paginated,
@@ -19,8 +22,10 @@ import type {
 } from '@/views/Crm/model/crm.types'
 
 export const crmService = {
-  async filas(): Promise<CrmFilasResponse> {
-    const { data } = await api.get<CrmFilasResponse>('/crm/filas')
+  async filas(tipo?: TipoFila): Promise<CrmFilasResponse> {
+    const { data } = await api.get<CrmFilasResponse>('/crm/filas', {
+      params: tipo ? { tipo } : undefined,
+    })
     return data
   },
   async contadores(): Promise<CrmContadores> {
@@ -69,6 +74,10 @@ export const crmService = {
   },
   async leadsImportProgress(jobId: string): Promise<CrmLeadImportProgress> {
     const { data } = await api.get<CrmLeadImportProgress>(`/crm/leads/import/${jobId}/progress`)
+    return data
+  },
+  async relatorio(params: CrmRelatorioFiltro): Promise<CrmRelatorio> {
+    const { data } = await api.get<CrmRelatorio>('/crm/relatorios', { params })
     return data
   },
 }

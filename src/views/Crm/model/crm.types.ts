@@ -260,3 +260,114 @@ export interface LeadsFiltro {
 }
 
 export type AbaCrm = TipoFila | 'novas_leads'
+
+export interface CrmRelatorioFiltro {
+  data_inicio?: string
+  data_fim?: string
+  tipo_fila?: TipoFila | ''
+  page?: number
+  page_casos?: number
+  per_page?: number
+}
+
+export interface CrmRelatorioKpis {
+  atendimentos: number
+  clientes_unicos: number
+  resolvidos: number
+  encerrados: number
+  leads: number
+  taxa_desfecho: number
+}
+
+export interface CrmRelatorioSerieDia {
+  data: string
+  total: number
+}
+
+export interface CrmRelatorioFunilFila {
+  atendimentos: number
+  resolvidos: number
+  encerrados: number
+}
+
+export type CategoriaAnaliseTexto =
+  | 'whatsapp'
+  | 'ligacao'
+  | 'email'
+  | 'cliente_respondeu'
+  | 'prometeu_pagar'
+  | 'sem_retorno'
+  | 'sem_interesse'
+  | 'acesso'
+
+export const CATEGORIA_ANALISE: CategoriaAnaliseTexto[] = [
+  'whatsapp',
+  'ligacao',
+  'email',
+  'cliente_respondeu',
+  'prometeu_pagar',
+  'sem_retorno',
+  'sem_interesse',
+  'acesso',
+]
+
+export const CATEGORIA_ANALISE_LABEL: Record<CategoriaAnaliseTexto, string> = {
+  whatsapp: 'WhatsApp',
+  ligacao: 'Ligação',
+  email: 'E-mail',
+  cliente_respondeu: 'Cliente respondeu',
+  prometeu_pagar: 'Prometeu pagar',
+  sem_retorno: 'Sem retorno',
+  sem_interesse: 'Sem interesse',
+  acesso: 'Acesso / produto',
+}
+
+export interface CrmRelatorioCasoTentativa {
+  id: number
+  id_cliente: number
+  tipo_fila: TipoFila
+  status: StatusCaso
+  tentativas: number
+  sem_retorno: boolean
+  prazo_retorno: string | null
+  nome_cliente: string | null
+  dominio: string | null
+}
+
+export interface CrmAnaliseTexto {
+  categorias: Record<CategoriaAnaliseTexto, number>
+  termos: Array<{ termo: string; total: number }>
+  resumo: string | null
+  ia_disponivel: boolean
+}
+
+export interface CrmRelatorioCasoFechado {
+  id: number
+  id_cliente: number
+  tipo_fila: TipoFila
+  status: StatusCaso
+  motivo_encerramento: MotivoEncerramento | null
+  tentativas: number
+  fechado_em: string | null
+  id_usuario_ultimo: number | null
+  nome_usuario_ultimo: string | null
+  nome_cliente: string | null
+  dominio: string | null
+}
+
+export type CrmEstoqueCasos = Record<TipoFila, Record<StatusCaso, number>>
+
+export interface CrmRelatorio {
+  periodo: { data_inicio: string; data_fim: string }
+  kpis: CrmRelatorioKpis
+  serie_diaria: CrmRelatorioSerieDia[]
+  por_fila: Record<TipoFila, number>
+  funil_por_fila: Record<TipoFila, CrmRelatorioFunilFila>
+  por_status_novo: Record<StatusRegistro, number>
+  por_motivo: Record<MotivoEncerramento, number>
+  estoque_casos: CrmEstoqueCasos
+  casos_mais_tentativas: CrmRelatorioCasoTentativa[]
+  analise_texto: CrmAnaliseTexto
+  atendimentos: Paginated<CrmAtendimento>
+  casos_fechados: Paginated<CrmRelatorioCasoFechado>
+}

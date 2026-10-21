@@ -83,6 +83,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/crm/relatorios',
+      name: 'admin.crm.relatorios',
+      component: () => import('../views/Crm/Relatorios.vue'),
+      meta: {
+        title: 'Relatórios CRM',
+        requiresProfile: 1,
+      },
+    },
+    {
       path: '/admin/clientes/boletos/:id',
       name: 'admin.clientes.boletos',
       component: () => import('../views/Cliente/Boletos.vue'),
