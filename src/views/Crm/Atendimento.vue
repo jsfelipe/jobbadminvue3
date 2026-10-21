@@ -208,7 +208,25 @@
                     Saiu do critério
                   </span>
                 </td>
-                <td class="text-gray-600 dark:text-gray-300">{{ c.dominio || '-' }}</td>
+                <td class="text-gray-600 dark:text-gray-300">
+                  <span class="inline-flex items-center gap-1.5">
+                    {{ c.dominio || '-' }}
+                    <button
+                      v-if="abaAtiva === 'atraso_pagamento' || abaAtiva === 'risco_abandono'"
+                      type="button"
+                      class="inline-flex rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700"
+                      title="Usuários da conta"
+                      @click="clienteUsuarios = c"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="3" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a3 3 0 0 1 0 5.74" />
+                      </svg>
+                    </button>
+                  </span>
+                </td>
                 <td>
                   <a
                     v-if="whatsappLink(c.telefone)"
@@ -523,6 +541,7 @@
       @registrado="onRegistrado"
     />
     <ModalHistoricoCliente v-if="clienteHistorico" :cliente="clienteHistorico" @close="clienteHistorico = null" />
+    <ModalUsuariosCliente v-if="clienteUsuarios" :cliente="clienteUsuarios" @close="clienteUsuarios = null" />
     <ModalCadastrarLead
       v-if="mostrarModalLead"
       :lead="leadEdicao"
@@ -547,6 +566,7 @@ import { crmService } from '@/services/crm'
 import CrmCounterCard from './components/CrmCounterCard.vue'
 import ModalRegistrarContato from './components/ModalRegistrarContato.vue'
 import ModalHistoricoCliente from './components/ModalHistoricoCliente.vue'
+import ModalUsuariosCliente from './components/ModalUsuariosCliente.vue'
 import ModalCadastrarLead from './components/ModalCadastrarLead.vue'
 import ModalImportarLeads from './components/ModalImportarLeads.vue'
 import {
@@ -623,6 +643,7 @@ const mostrarModalImport = ref(false)
 const clienteRegistro = ref<ClienteFila | null>(null)
 const tipoFilaRegistro = ref<TipoFila | null>(null)
 const clienteHistorico = ref<ClienteFila | null>(null)
+const clienteUsuarios = ref<ClienteFila | null>(null)
 const erro = ref('')
 
 type SortFilaCol = 'nome' | 'dominio' | 'vencimento'

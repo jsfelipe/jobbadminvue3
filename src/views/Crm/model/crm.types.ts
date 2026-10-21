@@ -88,6 +88,17 @@ export interface ClienteFila {
   caso?: CasoInfo | null
 }
 
+export interface CrmUsuarioCliente {
+  nome: string
+  telefone: string | null
+}
+
+export interface CrmUsuariosClienteResponse {
+  nome: string | null
+  dominio: string | null
+  usuarios: CrmUsuarioCliente[]
+}
+
 export type FilaPorStatus = Record<StatusCaso, ClienteFila[]>
 
 export type ContagemFila = Record<StatusCaso, number> & { sem_retorno: number }

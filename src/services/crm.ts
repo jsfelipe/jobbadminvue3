@@ -7,6 +7,7 @@ import type {
   CrmContadores,
   CrmFilasContagensResponse,
   CrmFilasResponse,
+  CrmUsuariosClienteResponse,
   TipoFila,
   CrmLead,
   CrmLeadImportProgress,
@@ -53,6 +54,10 @@ export const crmService = {
   },
   async historicoCliente(idCliente: number): Promise<CrmAtendimento[]> {
     const { data } = await api.get<CrmAtendimento[]>(`/crm/clientes/${idCliente}/historico`)
+    return data
+  },
+  async usuariosCliente(idCliente: number): Promise<CrmUsuariosClienteResponse> {
+    const { data } = await api.get<CrmUsuariosClienteResponse>(`/crm/clientes/${idCliente}/usuarios`)
     return data
   },
   async leadsMetas(): Promise<CrmLeadMetas> {
