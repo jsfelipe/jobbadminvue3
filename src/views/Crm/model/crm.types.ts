@@ -2,10 +2,12 @@ export type TipoFila = 'risco_abandono' | 'atraso_pagamento' | 'teste_expirado'
 
 export const TIPOS_FILA: TipoFila[] = ['risco_abandono', 'atraso_pagamento', 'teste_expirado']
 
+export const ABAS_FILA: TipoFila[] = ['atraso_pagamento', 'risco_abandono', 'teste_expirado']
+
 export const FILA_LABEL: Record<TipoFila, string> = {
   risco_abandono: 'Risco de abandono',
   atraso_pagamento: 'Atraso de pagamento',
-  teste_expirado: 'Teste > 3 meses',
+  teste_expirado: 'Cadastros > 3 meses',
 }
 
 export interface UltimoContato {
@@ -34,13 +36,20 @@ export const statusLabel = (status: StatusCaso, tipo: TipoFila): string => {
   return 'Encerrado'
 }
 
-export type MotivoEncerramento = 'sem_interesse' | 'nao_contatar' | 'sem_retorno' | 'contato_invalido' | 'outro'
+export type MotivoEncerramento =
+  | 'sem_interesse'
+  | 'nao_contatar'
+  | 'sem_retorno'
+  | 'contato_invalido'
+  | 'cancelamento'
+  | 'outro'
 
 export const MOTIVOS_ENCERRAMENTO: MotivoEncerramento[] = [
   'sem_interesse',
   'nao_contatar',
   'sem_retorno',
   'contato_invalido',
+  'cancelamento',
   'outro',
 ]
 
@@ -49,6 +58,7 @@ export const MOTIVO_ENCERRAMENTO_LABEL: Record<MotivoEncerramento, string> = {
   nao_contatar: 'Pediu para não contatar',
   sem_retorno: 'Sem retorno após tentativas',
   contato_invalido: 'Contato inválido',
+  cancelamento: 'Cancelamento',
   outro: 'Outro',
 }
 
@@ -124,6 +134,7 @@ export interface RegistrarContatoPayload {
   status: StatusRegistro
   prazo_retorno?: string | null
   motivo_encerramento?: MotivoEncerramento | null
+  cancelar_cliente?: boolean
 }
 
 export interface CrmCasoRaw {
@@ -203,6 +214,10 @@ export interface CrmLeadBucketMeta {
   feitos: number
   pendente: number
   feitos_hoje: number
+  dias_uteis_mes: number
+  meta_mes: number
+  feitos_mes: number
+  dentro_meta: boolean
 }
 
 export interface CrmLeadMetas {

@@ -2,7 +2,7 @@
   <Modal full-screen-backdrop @close="$emit('close')">
     <template #body>
       <div class="relative z-10 max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Cadastrar lead</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ editando ? 'Editar lead' : 'Cadastrar lead' }}</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Prospecção via Contact Out ou LinkedIn. Conta nas metas do dia (e no débito acumulado).
         </p>
@@ -110,6 +110,28 @@
               :disabled="salvando"
             />
           </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600 dark:text-gray-400" for="lead-pagina">Página</label>
+            <input
+              id="lead-pagina"
+              v-model="form.pagina"
+              type="number"
+              min="0"
+              class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              :disabled="salvando"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600 dark:text-gray-400" for="lead-palavra">Palavra-chave</label>
+            <input
+              id="lead-palavra"
+              v-model="form.palavra_chave"
+              type="text"
+              maxlength="160"
+              class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              :disabled="salvando"
+            />
+          </div>
           <div class="sm:col-span-2">
             <label class="text-xs font-semibold text-gray-600 dark:text-gray-400" for="lead-obs">Observação</label>
             <textarea
@@ -143,7 +165,7 @@
             :disabled="salvando || !formValido"
             @click="salvar"
           >
-            {{ salvando ? 'Salvando...' : 'Cadastrar' }}
+            {{ salvando ? 'Salvando...' : editando ? 'Salvar' : 'Cadastrar' }}
           </button>
         </div>
       </div>
@@ -167,9 +189,11 @@ import {
   type ProdutoLead,
 } from '../model/crm.types'
 
+const props = defineProps<{ lead?: CrmLead | null }>()
+
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'criado', lead: CrmLead): void
+  (e: 'salvo', lead: CrmLead): void
 }>()
 
 interface LoginState {
@@ -193,7 +217,26 @@ const form = reactive({
   linkedin_url: '',
   cidade_uf: '',
   observacao: '',
+  pagina: '' as string | number,
+  palavra_chave: '',
 })
+
+const editando = computed(() => !!props.lead?.id)
+
+const preencher = (lead: CrmLead | null | undefined) => {
+  form.produto = lead?.produto ?? 'jobblive'
+  form.origem = lead?.origem ?? 'contact_out'
+  form.nome = lead?.nome ?? ''
+  form.empresa = lead?.empresa ?? ''
+  form.cargo = lead?.cargo ?? ''
+  form.email = lead?.email ?? ''
+  form.telefone = lead?.telefone ?? ''
+  form.linkedin_url = lead?.linkedin_url ?? ''
+  form.cidade_uf = lead?.cidade_uf ?? ''
+  form.observacao = lead?.observacao ?? ''
+  form.pagina = lead?.pagina ?? ''
+  form.palavra_chave = lead?.palavra_chave ?? ''
+}
 
 const nomeUsuario = computed(() => {
   const login = (store.state as { Login?: LoginState }).Login
@@ -212,7 +255,7 @@ const salvar = async () => {
   }
   salvando.value = true
   try {
-    const lead = await crmService.leadsCriar({
+    const payload = {
       produto: form.produto,
       origem: form.origem,
       nome: form.nome.trim(),
@@ -223,17 +266,23 @@ const salvar = async () => {
       linkedin_url: form.linkedin_url.trim() || null,
       cidade_uf: form.cidade_uf.trim() || null,
       observacao: form.observacao.trim() || null,
-    })
-    toast.success('Lead cadastrado')
-    emit('criado', lead)
+      pagina: form.pagina === '' || form.pagina === null ? null : Number(form.pagina),
+      palavra_chave: form.palavra_chave.trim() || null,
+    }
+    const lead = props.lead?.id
+      ? await crmService.leadsAtualizar(props.lead.id, payload)
+      : await crmService.leadsCriar(payload)
+    toast.success(props.lead?.id ? 'Lead atualizado' : 'Lead cadastrado')
+    emit('salvo', lead)
   } catch {
-    erro.value = 'Não foi possível cadastrar. Tente novamente.'
+    erro.value = props.lead?.id ? 'Não foi possível salvar. Tente novamente.' : 'Não foi possível cadastrar. Tente novamente.'
   } finally {
     salvando.value = false
   }
 }
 
 onMounted(() => {
+  preencher(props.lead)
   nomeRef.value?.focus()
 })
 </script>

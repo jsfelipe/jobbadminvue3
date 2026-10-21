@@ -76,7 +76,7 @@
             :disabled="salvando"
           >
             <option :value="null" disabled>Selecione...</option>
-            <option v-for="m in MOTIVOS_ENCERRAMENTO" :key="m" :value="m">{{ MOTIVO_ENCERRAMENTO_LABEL[m] }}</option>
+            <option v-for="m in motivosDisponiveis" :key="m" :value="m">{{ MOTIVO_ENCERRAMENTO_LABEL[m] }}</option>
           </select>
         </div>
 
@@ -173,6 +173,12 @@ const nomeUsuario = computed(() => {
   return login?.data?.nome || login?.data?.name || 'usuário logado'
 })
 
+const motivosDisponiveis = computed(() =>
+  props.tipoFila === 'teste_expirado'
+    ? MOTIVOS_ENCERRAMENTO.filter((m) => m !== 'cancelamento')
+    : MOTIVOS_ENCERRAMENTO,
+)
+
 const podeSalvar = computed(
   () =>
     !salvando.value &&
@@ -191,6 +197,14 @@ const salvar = async () => {
     erro.value = 'Informe o motivo do encerramento.'
     return
   }
+  let cancelarCliente = false
+  if (
+    status.value === 'encerrado' &&
+    motivo.value === 'cancelamento' &&
+    (props.tipoFila === 'risco_abandono' || props.tipoFila === 'atraso_pagamento')
+  ) {
+    cancelarCliente = window.confirm('Deseja alterar o tipo do cliente para Cancelado?')
+  }
   salvando.value = true
   try {
     const registro = await crmService.registrar({
@@ -200,6 +214,7 @@ const salvar = async () => {
       status: status.value,
       prazo_retorno: status.value === 'aguardando_retorno' ? prazo.value : null,
       motivo_encerramento: status.value === 'encerrado' ? motivo.value : null,
+      cancelar_cliente: cancelarCliente,
     })
     toast.success(`Registrado: ${statusLabel(status.value, props.tipoFila)}`)
     emit('registrado', registro)

@@ -60,6 +60,10 @@ export const crmService = {
     const { data } = await api.post<CrmLead>('/crm/leads', payload)
     return data
   },
+  async leadsAtualizar(id: number, payload: CriarLeadPayload): Promise<CrmLead> {
+    const { data } = await api.put<CrmLead>(`/crm/leads/${id}`, payload)
+    return data
+  },
   async leadsImportar(params: {
     arquivo: File
     produto: ProdutoLead

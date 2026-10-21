@@ -46,7 +46,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 pt-3 dark:border-gray-700">
           <nav class="-mb-px flex flex-wrap gap-4">
             <button
-              v-for="tipo in TIPOS_FILA"
+              v-for="tipo in ABAS_FILA"
               :key="tipo"
               type="button"
               class="flex items-center gap-2 border-b-2 pb-3 text-sm font-medium"
@@ -99,7 +99,7 @@
             <CrmCounterCard label="Feitos hoje (equipe)" :value="contadores?.hoje?.total ?? 0" value-class="text-emerald-600" />
             <CrmCounterCard label="Feitos hoje (eu)" :value="contadores?.hoje?.meus ?? 0" value-class="text-blue-600" />
             <CrmCounterCard
-              v-for="tipo in TIPOS_FILA"
+              v-for="tipo in ABAS_FILA"
               :key="tipo"
               :label="FILA_LABEL[tipo]"
               :value="contadores?.hoje?.por_fila?.[tipo]?.total ?? 0"
@@ -325,6 +325,14 @@
               :value="`${metasLeads?.buckets[bucket]?.feitos_hoje ?? 0} / ${metasLeads?.buckets[bucket]?.meta_diaria ?? 0}`"
               :sub-label="`Pendente acumulado: ${metasLeads?.buckets[bucket]?.pendente ?? 0}`"
               :progress="progressoLead(bucket)"
+              :progress2="metasLeads?.buckets ? progressoLeadMes(bucket) : undefined"
+              :progress2-label="
+                metasLeads?.buckets
+                  ? `Mês: ${metasLeads.buckets[bucket]?.feitos_mes ?? 0} / ${metasLeads.buckets[bucket]?.meta_mes ?? 0}`
+                  : ''
+              "
+              :progress2-class="metasLeads?.buckets?.[bucket]?.dentro_meta ? 'bg-emerald-500' : 'bg-amber-500'"
+              :progress2-text-class="metasLeads?.buckets?.[bucket]?.dentro_meta ? 'text-emerald-600' : 'text-amber-600'"
               :value-class="(metasLeads?.buckets[bucket]?.pendente ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600'"
             />
           </div>
@@ -360,7 +368,7 @@
               <button
                 type="button"
                 class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
-                @click="mostrarModalLead = true"
+                @click="abrirCadastroLead"
               >
                 Cadastrar lead
               </button>
@@ -380,6 +388,7 @@
                 <th>Contato</th>
                 <th>Palavra-chave</th>
                 <th>Atendente</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -433,6 +442,15 @@
                 </td>
                 <td class="text-xs text-gray-600 dark:text-gray-300">{{ l.palavra_chave || '-' }}</td>
                 <td class="text-xs">{{ l.nome_usuario || '—' }}</td>
+                <td class="text-right">
+                  <button
+                    type="button"
+                    class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold dark:border-gray-600 dark:text-gray-200"
+                    @click="abrirEdicaoLead(l)"
+                  >
+                    Editar
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -505,7 +523,12 @@
       @registrado="onRegistrado"
     />
     <ModalHistoricoCliente v-if="clienteHistorico" :cliente="clienteHistorico" @close="clienteHistorico = null" />
-    <ModalCadastrarLead v-if="mostrarModalLead" @close="mostrarModalLead = false" @criado="onLeadCriado" />
+    <ModalCadastrarLead
+      v-if="mostrarModalLead"
+      :lead="leadEdicao"
+      @close="fecharModalLead"
+      @salvo="onLeadSalvo"
+    />
     <ModalImportarLeads
       v-if="mostrarModalImport"
       @close="mostrarModalImport = false"
@@ -534,6 +557,7 @@ import {
   ORIGEM_LEAD_LABEL,
   PRODUTO_LEAD_LABEL,
   STATUS_CASO,
+  ABAS_FILA,
   TIPOS_FILA,
   statusLabel,
   type AbaCrm,
@@ -586,12 +610,13 @@ const metasLeads = ref<CrmLeadMetas | null>(null)
 const leads = ref<CrmLead[]>([])
 const carregando = ref(false)
 const carregandoLeads = ref(false)
-const abaAtiva = ref<AbaCrm>('risco_abandono')
+const abaAtiva = ref<AbaCrm>('atraso_pagamento')
 const busca = ref('')
 const buscaLeads = ref('')
 const leadsPeriodo = ref<'hoje' | '7d'>('hoje')
 const mostrarRegistrosHoje = ref(true)
 const mostrarModalLead = ref(false)
+const leadEdicao = ref<CrmLead | null>(null)
 const mostrarModalImport = ref(false)
 const clienteRegistro = ref<ClienteFila | null>(null)
 const tipoFilaRegistro = ref<TipoFila | null>(null)
@@ -671,6 +696,12 @@ const progressoLead = (bucket: BucketMetaLead): number => {
   return Math.min(100, Math.round((b.feitos / b.meta_acumulada) * 100))
 }
 
+const progressoLeadMes = (bucket: BucketMetaLead): number => {
+  const b = metasLeads.value?.buckets[bucket]
+  if (!b || b.meta_mes === 0) return 100
+  return Math.min(100, Math.round((b.feitos_mes / b.meta_mes) * 100))
+}
+
 const listaFiltrada = computed<ClienteFila[]>(() => {
   if (abaAtiva.value === 'novas_leads') return []
   const lista = listaAtual.value
@@ -723,7 +754,7 @@ const carregarLeads = async () => {
       q: buscaLeads.value.trim() || undefined,
       per_page: 200,
     })
-    leads.value = page.data
+    leads.value = Array.isArray(page.data) ? page.data : []
   } finally {
     carregandoLeads.value = false
   }
@@ -903,8 +934,23 @@ const onRegistrado = (registro: CrmAtendimentoRegistrado) => {
   void Promise.all([recarregarFilas(), carregarContadores(), carregarRegistrosHoje()])
 }
 
-const onLeadCriado = (_lead: CrmLead) => {
+const abrirCadastroLead = () => {
+  leadEdicao.value = null
+  mostrarModalLead.value = true
+}
+
+const abrirEdicaoLead = (lead: CrmLead) => {
+  leadEdicao.value = lead
+  mostrarModalLead.value = true
+}
+
+const fecharModalLead = () => {
   mostrarModalLead.value = false
+  leadEdicao.value = null
+}
+
+const onLeadSalvo = (_lead: CrmLead) => {
+  fecharModalLead()
   void Promise.all([carregarMetasLeads(), carregarLeads()])
 }
 
