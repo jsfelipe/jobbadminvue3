@@ -99,6 +99,12 @@ export interface CrmFilasResponse {
   prazo_retorno_dias_uteis: number
 }
 
+export interface CrmFilasContagensResponse {
+  contagens: Record<TipoFila, ContagemFila>
+  prazo_retorno_padrao: string
+  prazo_retorno_dias_uteis: number
+}
+
 export interface CrmAtendimento {
   id: number
   id_cliente: number

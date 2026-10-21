@@ -5,6 +5,7 @@ import type {
   CrmAtendimentoRegistrado,
   CrmCasoRaw,
   CrmContadores,
+  CrmFilasContagensResponse,
   CrmFilasResponse,
   TipoFila,
   CrmLead,
@@ -25,6 +26,12 @@ export const crmService = {
   async filas(tipo?: TipoFila): Promise<CrmFilasResponse> {
     const { data } = await api.get<CrmFilasResponse>('/crm/filas', {
       params: tipo ? { tipo } : undefined,
+    })
+    return data
+  },
+  async filasContagens(fresh = false): Promise<CrmFilasContagensResponse> {
+    const { data } = await api.get<CrmFilasContagensResponse>('/crm/filas/contagens', {
+      params: fresh ? { fresh: 1 } : undefined,
     })
     return data
   },

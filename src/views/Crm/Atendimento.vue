@@ -28,7 +28,7 @@
             type="button"
             class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             :disabled="carregando"
-            @click="carregarTudo"
+            @click="carregarTudo(true)"
           >
             {{ carregando ? 'Atualizando...' : 'Atualizar' }}
           </button>
@@ -59,7 +59,7 @@
             >
               {{ FILA_LABEL[tipo] }}
               <span
-                v-if="filasCarregadas[tipo]"
+                v-if="contagensProntas || filasCarregadas[tipo]"
                 class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
                 :class="filaBadgeClass(tipo)"
               >
@@ -103,8 +103,8 @@
               :key="tipo"
               :label="FILA_LABEL[tipo]"
               :value="contadores?.hoje?.por_fila?.[tipo]?.total ?? 0"
-              :sub-label="filasCarregadas[tipo] ? `/ ${pendentes(tipo)} pendentes` : ''"
-              :progress="filasCarregadas[tipo] ? progresso(tipo) : undefined"
+              :sub-label="contagensProntas || filasCarregadas[tipo] ? `/ ${pendentes(tipo)} pendentes` : ''"
+              :progress="contagensProntas || filasCarregadas[tipo] ? progresso(tipo) : undefined"
               :active="abaAtiva === tipo"
               clickable
               @click="selecionarAba(tipo)"
@@ -567,6 +567,7 @@ import {
   type CrmAtendimentoRegistrado,
   type ContagemFila,
   type CrmContadores,
+  type CrmFilasContagensResponse,
   type CrmFilasResponse,
   type FilaPorStatus,
   type CrmLead,
@@ -598,6 +599,7 @@ const isAdmin = computed(() => {
 
 const filasResp = ref<CrmFilasResponse | null>(null)
 const filasCarregadas = ref<Partial<Record<TipoFila, boolean>>>({})
+const contagensProntas = ref(false)
 const carregandoFila = ref(false)
 const leadsCarregados = ref(false)
 const subAba = ref<StatusCaso>('pendente')
@@ -777,24 +779,41 @@ const contagensVazias = (): ContagemFila => ({
   sem_retorno: 0,
 })
 
+const garantirFilasResp = (prazoPadrao: string, prazoDias: number) => {
+  if (filasResp.value) return
+  const filas = {} as Record<TipoFila, FilaPorStatus>
+  const contagens = {} as Record<TipoFila, ContagemFila>
+  for (const t of TIPOS_FILA) {
+    filas[t] = listasVazias()
+    contagens[t] = contagensVazias()
+  }
+  filasResp.value = {
+    filas,
+    contagens,
+    prazo_retorno_padrao: prazoPadrao,
+    prazo_retorno_dias_uteis: prazoDias,
+  }
+}
+
+const aplicarContagens = (resp: CrmFilasContagensResponse) => {
+  if (!resp?.contagens) return
+  garantirFilasResp(resp.prazo_retorno_padrao, resp.prazo_retorno_dias_uteis)
+  if (!filasResp.value) return
+  for (const t of TIPOS_FILA) {
+    if (!resp.contagens[t] || filasCarregadas.value[t]) continue
+    filasResp.value.contagens[t] = resp.contagens[t]
+  }
+  filasResp.value.prazo_retorno_padrao = resp.prazo_retorno_padrao
+  filasResp.value.prazo_retorno_dias_uteis = resp.prazo_retorno_dias_uteis
+  contagensProntas.value = true
+}
+
 const aplicarFila = (resp: CrmFilasResponse) => {
   if (!resp?.filas) {
     throw new Error('Resposta inválida das filas')
   }
-  if (!filasResp.value) {
-    const filas = {} as Record<TipoFila, FilaPorStatus>
-    const contagens = {} as Record<TipoFila, ContagemFila>
-    for (const t of TIPOS_FILA) {
-      filas[t] = listasVazias()
-      contagens[t] = contagensVazias()
-    }
-    filasResp.value = {
-      filas,
-      contagens,
-      prazo_retorno_padrao: resp.prazo_retorno_padrao,
-      prazo_retorno_dias_uteis: resp.prazo_retorno_dias_uteis,
-    }
-  }
+  garantirFilasResp(resp.prazo_retorno_padrao, resp.prazo_retorno_dias_uteis)
+  if (!filasResp.value) return
   for (const t of TIPOS_FILA) {
     if (!resp.filas[t]) continue
     filasResp.value.filas[t] = resp.filas[t]
@@ -803,6 +822,10 @@ const aplicarFila = (resp: CrmFilasResponse) => {
   }
   filasResp.value.prazo_retorno_padrao = resp.prazo_retorno_padrao
   filasResp.value.prazo_retorno_dias_uteis = resp.prazo_retorno_dias_uteis
+}
+
+const carregarContagensFilas = async (fresh = false) => {
+  aplicarContagens(await crmService.filasContagens(fresh))
 }
 
 let filaReq = 0
@@ -846,13 +869,13 @@ const abrirAbaLeads = () => {
   selecionarAba('novas_leads')
 }
 
-const carregarTudo = async () => {
+const carregarTudo = async (fresh = false) => {
   carregando.value = true
   erro.value = ''
   try {
     if (abaAtiva.value === 'novas_leads') {
       leadsCarregados.value = false
-      await carregarLeadsAba()
+      await Promise.allSettled([carregarLeadsAba(), carregarContagensFilas(fresh)])
       return
     }
 
@@ -860,6 +883,7 @@ const carregarTudo = async () => {
     filasCarregadas.value = {}
     const extras = await Promise.allSettled([
       carregarFila(tipo),
+      carregarContagensFilas(fresh),
       carregarContadores(),
       carregarRegistrosHoje(),
     ])
@@ -894,7 +918,7 @@ const recarregarFilas = async () => {
   if (abaAtiva.value === 'novas_leads') return
   filasCarregadas.value = {}
   try {
-    await carregarFila(abaAtiva.value)
+    await Promise.all([carregarFila(abaAtiva.value), carregarContagensFilas(true)])
   } catch {
     erro.value = 'Falha ao atualizar as filas.'
   }
