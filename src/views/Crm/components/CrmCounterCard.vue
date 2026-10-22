@@ -5,6 +5,9 @@
     @click="clickable ? $emit('click') : undefined"
   >
     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ label }}</p>
+    <p v-if="hint" class="mt-0.5 text-[11px] font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">
+      {{ hint }}
+    </p>
     <div class="mt-2 flex items-baseline gap-2">
       <span class="text-3xl font-bold" :class="valueClass">{{ value }}</span>
       <span v-if="subLabel" class="text-sm text-gray-500 dark:text-gray-400">{{ subLabel }}</span>
@@ -28,6 +31,7 @@ withDefaults(
   defineProps<{
     label: string
     value: number | string
+    hint?: string
     subLabel?: string
     progress?: number
     progress2?: number
@@ -39,6 +43,7 @@ withDefaults(
     valueClass?: string
   }>(),
   {
+    hint: '',
     subLabel: '',
     progress2Label: '',
     progress2Class: 'bg-emerald-500',

@@ -13,6 +13,12 @@
           >
             Voltar ao CRM
           </router-link>
+          <router-link
+            to="/admin/crm/pesquisas"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-600 dark:text-gray-200"
+          >
+            Pesquisas
+          </router-link>
           <button
             type="button"
             class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"

@@ -92,6 +92,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/crm/pesquisas',
+      name: 'admin.crm.pesquisas',
+      component: () => import('../views/Crm/Pesquisas.vue'),
+      meta: {
+        title: 'Pesquisas CRM',
+        requiresProfile: 1,
+      },
+    },
+    {
       path: '/admin/clientes/boletos/:id',
       name: 'admin.clientes.boletos',
       component: () => import('../views/Cliente/Boletos.vue'),

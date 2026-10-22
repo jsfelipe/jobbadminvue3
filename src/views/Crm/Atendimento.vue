@@ -24,6 +24,15 @@
             <PieChartIcon class="h-4 w-4" />
             Relatórios
           </router-link>
+          <router-link
+            v-if="isAdmin"
+            to="/admin/crm/pesquisas"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+            title="Pesquisas CRM"
+          >
+            <DocsIcon class="h-4 w-4" />
+            Pesquisas
+          </router-link>
           <button
             type="button"
             class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
@@ -561,7 +570,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import { toast } from 'vue3-toastify'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { PieChartIcon } from '@/icons'
+import { DocsIcon, PieChartIcon } from '@/icons'
 import { crmService } from '@/services/crm'
 import CrmCounterCard from './components/CrmCounterCard.vue'
 import ModalRegistrarContato from './components/ModalRegistrarContato.vue'

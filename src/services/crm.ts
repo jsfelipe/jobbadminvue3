@@ -22,6 +22,11 @@ import type {
   ProdutoLead,
   RegistrarContatoPayload,
 } from '@/views/Crm/model/crm.types'
+import type {
+  PesquisaListFiltro,
+  PesquisaResposta,
+  PesquisaResumo,
+} from '@/views/Crm/model/pesquisa.types'
 
 export const crmService = {
   async filas(tipo?: TipoFila): Promise<CrmFilasResponse> {
@@ -94,6 +99,18 @@ export const crmService = {
   },
   async relatorio(params: CrmRelatorioFiltro): Promise<CrmRelatorio> {
     const { data } = await api.get<CrmRelatorio>('/crm/relatorios', { params })
+    return data
+  },
+  async pesquisaResumo(params: { data_inicio?: string; data_fim?: string }): Promise<PesquisaResumo> {
+    const { data } = await api.get<PesquisaResumo>('/crm/pesquisas/resumo', { params })
+    return data
+  },
+  async pesquisasListar(params: PesquisaListFiltro): Promise<Paginated<PesquisaResposta>> {
+    const { data } = await api.get<Paginated<PesquisaResposta>>('/crm/pesquisas', { params })
+    return data
+  },
+  async pesquisaDetalhe(id: number): Promise<PesquisaResposta> {
+    const { data } = await api.get<PesquisaResposta>(`/crm/pesquisas/${id}`)
     return data
   },
 }
