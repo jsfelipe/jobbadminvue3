@@ -103,7 +103,16 @@
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <CrmCounterCard label="Respostas" :value="resumo?.kpis.respostas ?? 0" value-class="text-blue-600" />
-        <CrmCounterCard label="Recusas" :value="resumo?.kpis.recusas ?? 0" value-class="text-gray-600" />
+        <div class="flex flex-col justify-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div class="flex items-baseline justify-between gap-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Ocultado</p>
+            <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ resumo?.kpis.ocultados ?? 0 }}</p>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Declinado</p>
+            <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ resumo?.kpis.declinados ?? 0 }}</p>
+          </div>
+        </div>
         <CrmCounterCard
           label="NPS"
           hint="Net Promoter Score: chance de indicar o Jobb (0 a 10). Promotores (9–10) menos detratores (0–6), de −100 a +100."

@@ -172,6 +172,8 @@ export const DIMENSAO_ATENDIMENTO_LABEL: Record<DimensaoAtendimento, string> = {
 export interface PesquisaResumoKpis {
   respostas: number
   recusas: number
+  ocultados: number
+  declinados: number
   nps: number
   csat: number
   promotores: number
