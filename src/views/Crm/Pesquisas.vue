@@ -5,7 +5,7 @@
         <div>
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white">CRM - Pesquisas</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            Satisfação, demanda, atendimento (Nível 1 / Nível 2) e oportunidades comerciais.
+            Satisfação, demanda, atendimento e oportunidades comerciais.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -101,18 +101,8 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <CrmCounterCard label="Respostas" :value="resumo?.kpis.respostas ?? 0" value-class="text-blue-600" />
-        <div class="flex flex-col justify-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div class="flex items-baseline justify-between gap-2">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Ocultado</p>
-            <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ resumo?.kpis.ocultados ?? 0 }}</p>
-          </div>
-          <div class="flex items-baseline justify-between gap-2">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Declinado</p>
-            <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ resumo?.kpis.declinados ?? 0 }}</p>
-          </div>
-        </div>
         <CrmCounterCard
           label="NPS"
           hint="Net Promoter Score: chance de indicar o Jobb (0 a 10). Promotores (9–10) menos detratores (0–6), de −100 a +100."
@@ -141,7 +131,7 @@
         />
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <CrmCounterCard
           label="Usaram atendimento"
           hint="Percentual de respostas que já usaram ticket, WhatsApp ou Chat/Bot."
@@ -150,16 +140,10 @@
           :progress="resumo?.kpis.pct_atendimento ?? 0"
         />
         <CrmCounterCard
-          label="Nível 1 médio"
-          hint="Média de educação, tempo de resposta e resolução no atendimento inicial (1 a 5)."
-          :value="resumo?.kpis.n1_media ?? 0"
-          :sub-label="`${resumo?.kpis.atendimento_usou ?? 0} avaliações`"
-        />
-        <CrmCounterCard
-          label="Nível 2 médio"
-          hint="Média quando o caso foi para desenvolvimento ou correção de bugs (1 a 5)."
-          :value="resumo?.kpis.n2_media ?? 0"
-          :sub-label="`${resumo?.kpis.atendimento_nivel2 ?? 0} casos`"
+          label="Atendimento"
+          hint="Nota única do atendimento, de 1 a 5."
+          :value="resumo?.kpis.atendimento_media ?? 0"
+          :sub-label="`${resumo?.kpis.atendimento_avaliacoes ?? 0} avaliações`"
         />
       </div>
 
@@ -209,9 +193,9 @@
           <p v-else class="py-10 text-center text-sm text-gray-500">Sem dados no período.</p>
         </div>
         <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Notas do atendimento</h3>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Atendimento</h3>
           <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">
-            Nível 1 (inicial) vs Nível 2 (desenvolvimento / bugs), de 1 a 5.
+            Nota única de 1 a 5.
           </p>
           <VueApexCharts v-if="temNotasAtend" type="bar" height="280" :options="optNotasAtend" :series="seriesNotasAtend" />
           <p v-else class="py-10 text-center text-sm text-gray-500">Sem dados no período.</p>
@@ -393,8 +377,6 @@ import {
   NPS_FAIXAS,
   CANAIS_ATENDIMENTO,
   CANAL_ATENDIMENTO_LABEL,
-  DIMENSAO_ATENDIMENTO_LABEL,
-  DIMENSOES_ATENDIMENTO,
   SERVICO_LABEL,
   SERVICOS,
   histAt,
@@ -521,19 +503,17 @@ const optCanais = computed<ApexOptions>(() => ({
   colors: ['#0d9488'],
 }))
 
-const temNotasAtend = computed(() =>
-  DIMENSOES_ATENDIMENTO.some((k) => (resumo.value?.atendimento_n1?.[k] ?? 0) > 0 || (resumo.value?.atendimento_n2?.[k] ?? 0) > 0),
-)
-const seriesNotasAtend = computed(() => [
-  { name: 'Nível 1', data: DIMENSOES_ATENDIMENTO.map((k) => resumo.value?.atendimento_n1?.[k] ?? 0) },
-  { name: 'Nível 2', data: DIMENSOES_ATENDIMENTO.map((k) => resumo.value?.atendimento_n2?.[k] ?? 0) },
-])
+const atendKeys = [1, 2, 3, 4, 5]
+const temNotasAtend = computed(() => atendKeys.some((k) => histAt(resumo.value?.atendimento_histograma, k) > 0))
+const seriesNotasAtend = computed(() => [{
+  name: 'Respostas',
+  data: atendKeys.map((k) => histAt(resumo.value?.atendimento_histograma, k)),
+}])
 const optNotasAtend = computed<ApexOptions>(() => ({
   ...baseChart(),
-  plotOptions: { bar: { horizontal: false, borderRadius: 4, columnWidth: '55%' } },
-  xaxis: { categories: DIMENSOES_ATENDIMENTO.map((k) => DIMENSAO_ATENDIMENTO_LABEL[k]) },
-  yaxis: { min: 0, max: 5, tickAmount: 5 },
-  colors: ['#ea580c', '#7c3aed'],
+  plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
+  xaxis: { categories: atendKeys.map(String) },
+  colors: ['#ea580c'],
 }))
 
 function periodoParams() {

@@ -83,18 +83,7 @@
                 Canais: {{ labelsLista(row.atendimento_canais || [], CANAL_ATENDIMENTO_LABEL) }}
               </p>
               <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                Nível 1 — educação {{ row.n1_educacao ?? '—' }}, tempo {{ row.n1_tempo ?? '—' }},
-                resolução {{ row.n1_resolucao ?? '—' }}
-              </p>
-              <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                Nível 2:
-                <template v-if="row.atendimento_nivel2 === 'sim'">
-                  educação {{ row.n2_educacao ?? '—' }}, tempo {{ row.n2_tempo ?? '—' }},
-                  resolução {{ row.n2_resolucao ?? '—' }}
-                </template>
-                <template v-else>
-                  {{ row.atendimento_nivel2 ? SIM_NAO_LABEL[row.atendimento_nivel2] : '—' }}
-                </template>
+                Nota: {{ row.atendimento_nota ?? '—' }}
               </p>
             </template>
           </section>

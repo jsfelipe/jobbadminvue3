@@ -40,7 +40,6 @@ export type SistemaIntegracao =
   | 'outro'
 export type SimNao = 'sim' | 'nao'
 export type CanalAtendimento = 'chat' | 'ticket' | 'whatsapp'
-export type DimensaoAtendimento = 'educacao' | 'tempo' | 'resolucao'
 
 export const NPS_FAIXAS: NpsFaixa[] = ['promotor', 'neutro', 'detrator']
 export const FREQUENCIAS: FrequenciaUso[] = [
@@ -91,7 +90,6 @@ export const SISTEMAS: SistemaIntegracao[] = [
   'outro',
 ]
 export const CANAIS_ATENDIMENTO: CanalAtendimento[] = ['ticket', 'whatsapp', 'chat']
-export const DIMENSOES_ATENDIMENTO: DimensaoAtendimento[] = ['educacao', 'tempo', 'resolucao']
 
 export const NPS_FAIXA_LABEL: Record<NpsFaixa, string> = {
   promotor: 'Promotor (9–10)',
@@ -163,11 +161,6 @@ export const CANAL_ATENDIMENTO_LABEL: Record<CanalAtendimento, string> = {
   whatsapp: 'WhatsApp',
   chat: 'Chat/Bot',
 }
-export const DIMENSAO_ATENDIMENTO_LABEL: Record<DimensaoAtendimento, string> = {
-  educacao: 'Educação',
-  tempo: 'Tempo de resposta',
-  resolucao: 'Resolução',
-}
 
 export interface PesquisaResumoKpis {
   respostas: number
@@ -187,10 +180,9 @@ export interface PesquisaResumoKpis {
   interesse_dashboard: number
   atendimento_usou: number
   atendimento_nao: number
-  atendimento_nivel2: number
   pct_atendimento: number
-  n1_media: number
-  n2_media: number
+  atendimento_media: number
+  atendimento_avaliacoes: number
 }
 
 export interface PesquisaResumo {
@@ -208,8 +200,7 @@ export interface PesquisaResumo {
   dashboard_interesse: Record<InteresseComercial, number>
   integracao_sistemas: Record<SistemaIntegracao, number>
   atendimento_canais: Record<CanalAtendimento, number>
-  atendimento_n1: Record<DimensaoAtendimento, number>
-  atendimento_n2: Record<DimensaoAtendimento, number>
+  atendimento_histograma: Record<string, number> | number[]
 }
 
 export interface PesquisaResposta {
@@ -243,13 +234,7 @@ export interface PesquisaResposta {
   comentario: string | null
   atendimento_usou: SimNao | null
   atendimento_canais: CanalAtendimento[]
-  n1_educacao: number | null
-  n1_tempo: number | null
-  n1_resolucao: number | null
-  atendimento_nivel2: SimNao | null
-  n2_educacao: number | null
-  n2_tempo: number | null
-  n2_resolucao: number | null
+  atendimento_nota: number | null
   created_at: string
   updated_at: string
 }
