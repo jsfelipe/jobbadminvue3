@@ -97,7 +97,35 @@ const router = createRouter({
       component: () => import('../views/Crm/Pesquisas.vue'),
       meta: {
         title: 'Pesquisas CRM',
-        requiresProfile: 1,
+        requiresProfile: [1, 6],
+      },
+    },
+    {
+      path: '/admin/crm/oportunidades/funis',
+      redirect: '/admin/crm/oportunidades/configuracoes',
+    },
+    {
+      path: '/admin/crm/oportunidades/configuracoes',
+      name: 'admin.crm.oportunidades.configuracoes',
+      component: () => import('../views/Crm/Configuracoes.vue'),
+      meta: {
+        title: 'Configurações CRM',
+      },
+    },
+    {
+      path: '/admin/crm/oportunidades/:id',
+      name: 'admin.crm.oportunidades.detalhe',
+      component: () => import('../views/Crm/OportunidadeDetalhe.vue'),
+      meta: {
+        title: 'Oportunidade',
+      },
+    },
+    {
+      path: '/admin/crm/oportunidades',
+      name: 'admin.crm.oportunidades',
+      component: () => import('../views/Crm/Oportunidades.vue'),
+      meta: {
+        title: 'Oportunidades',
       },
     },
     {

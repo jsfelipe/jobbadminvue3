@@ -307,7 +307,12 @@ function logout() {
   router.push("/signin");
 }
 
-const isActive = (path) => route.path === path;
+const isActive = (path) => {
+  if (path === "/admin/crm/oportunidades") {
+    return route.path === path || route.path.startsWith(`${path}/`);
+  }
+  return route.path === path;
+};
 
 const toggleSubmenu = (groupIndex, itemIndex) => {
   const key = `${groupIndex}-${itemIndex}`;

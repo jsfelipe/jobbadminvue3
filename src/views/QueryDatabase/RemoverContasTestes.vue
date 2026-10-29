@@ -5,9 +5,10 @@
         <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h4 class="text-xl font-semibold text-gray-900 dark:text-white">Remover contas Testes</h4>
-            <p v-if="cutoff" class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Cadastro até {{ formatarData(cutoff) }} e sem acesso após essa data. Total:
-              {{ clientes.length }}
+            <p v-if="cutoffCadastro" class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Cadastro até {{ formatarData(cutoffCadastro) }}. Bloqueio se houve acesso a partir de
+              {{ formatarData(cutoffAcesso) }}. Removíveis: {{ totalRemoviveis }}. Bloqueados:
+              {{ totalBloqueados }}.
             </p>
           </div>
           <el-button @click="voltar">Voltar</el-button>
@@ -44,22 +45,35 @@
           <el-table v-if="clientes.length > 0" :data="clientes" stripe border style="width: 100%">
             <el-table-column prop="nome" label="Nome" min-width="200" />
             <el-table-column prop="subdominio" label="Subdomínio" min-width="140" />
+            <el-table-column prop="schema_name" label="Base" min-width="140" />
             <el-table-column label="Data cadastro" min-width="130">
               <template #default="{ row }">
                 {{ formatarData(row.data_cadastro) }}
               </template>
             </el-table-column>
-            <el-table-column label="Tipo cliente" width="120" align="center">
+            <el-table-column label="Último acesso" min-width="130">
               <template #default="{ row }">
-                <el-tag type="warning" disable-transitions>{{ row.tipo_cliente }}</el-tag>
+                {{ formatarData(row.data_ultimo_acesso) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Data vencimento" min-width="140">
+              <template #default="{ row }">
+                {{ formatarData(row.data_vencimento) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Situação" width="150" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.removivel ? 'danger' : 'info'" disable-transitions>
+                  {{ row.removivel ? 'Removível' : 'Acesso recente' }}
+                </el-tag>
               </template>
             </el-table-column>
           </el-table>
-          <el-empty v-else-if="!carregando" description="Nenhuma conta teste elegível para remoção" />
+          <el-empty v-else-if="!carregando" description="Nenhuma conta teste com base no servidor" />
         </div>
 
         <div class="flex gap-2">
-          <el-button type="danger" :disabled="processando || clientes.length === 0" @click="confirmar">
+          <el-button type="danger" :disabled="processando || totalRemoviveis === 0" @click="confirmar">
             Confirmar remoção
           </el-button>
           <el-button :disabled="processando" @click="voltar">Cancelar</el-button>
@@ -81,13 +95,21 @@ interface ContaTesteElegivel {
   nome: string
   subdominio: string | null
   data_cadastro: string | null
+  data_vencimento: string | null
+  data_ultimo_acesso: string | null
   tipo_cliente: string
-  db_name: string
+  db_name: string | null
+  schema_name: string
+  removivel: boolean
+  motivo: string | null
 }
 
 interface PreviewResponse {
   total: number
-  cutoff: string
+  total_removiveis: number
+  total_bloqueados: number
+  cutoff_cadastro: string
+  cutoff_acesso: string
   clientes: ContaTesteElegivel[]
 }
 
@@ -103,7 +125,8 @@ interface ProgressoResult {
 const router = useRouter()
 const carregando = ref(true)
 const processando = ref(false)
-const cutoff = ref('')
+const cutoffCadastro = ref('')
+const cutoffAcesso = ref('')
 const clientes = ref<ContaTesteElegivel[]>([])
 const jobId = ref<string | null>(null)
 
@@ -116,6 +139,9 @@ const progresso = reactive({
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null
 let progressoTimeout: ReturnType<typeof setTimeout> | null = null
+
+const totalRemoviveis = computed(() => clientes.value.filter((cliente) => cliente.removivel).length)
+const totalBloqueados = computed(() => clientes.value.filter((cliente) => !cliente.removivel).length)
 
 const progressoPercentage = computed(() => {
   if (progresso.total > 0) {
@@ -136,7 +162,8 @@ async function carregarLista() {
   carregando.value = true
   try {
     const response = await api.get<PreviewResponse>('/query-database/remover-contas-testes/preview')
-    cutoff.value = response.data.cutoff
+    cutoffCadastro.value = response.data.cutoff_cadastro
+    cutoffAcesso.value = response.data.cutoff_acesso
     clientes.value = response.data.clientes || []
   } catch (error) {
     console.error('Erro ao carregar contas teste:', error)
@@ -156,11 +183,11 @@ function voltar() {
 }
 
 async function confirmar() {
-  if (clientes.value.length === 0) return
+  if (totalRemoviveis.value === 0) return
 
   try {
     await ElMessageBox.confirm(
-      `Remover ${clientes.value.length} conta(s) teste? Esta ação é irreversível (base e usuário MySQL).`,
+      `Remover ${totalRemoviveis.value} conta(s) teste? Contas com acesso nos últimos 2 meses não entram. Esta ação é irreversível (base e usuário MySQL).`,
       'Confirmar remoção',
       {
         confirmButtonText: 'Remover',
@@ -173,7 +200,7 @@ async function confirmar() {
   }
 
   processando.value = true
-  progresso.total = clientes.value.length
+  progresso.total = totalRemoviveis.value
   progresso.completed = 0
   progresso.status = 'processing'
   progresso.results = []

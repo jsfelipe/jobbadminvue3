@@ -131,7 +131,10 @@ function mapApiItemsToMenuGroups(apiItems: SidebarMenuItemApi[]): MenuGroup[] {
   const crmItem: MenuItemWithIcon = {
     icon: UserGroupIcon,
     name: 'CRM',
-    path: '/admin/crm',
+    subItems: [
+      { name: 'Atendimento', path: '/admin/crm', pro: false },
+      { name: 'Oportunidades', path: '/admin/crm/oportunidades', pro: false },
+    ],
   }
   const desbloqueioIdx = items.findIndex(
     (i) => i.name === 'Desbloqueio' || i.name.toLowerCase().includes('desbloqueio'),
@@ -149,7 +152,14 @@ const defaultMenuItems: MenuItemWithIcon[] = [
   { icon: GridIcon, name: 'Dashboard', path: '/admin/overview' },
   { icon: UserGroupIcon, name: 'Meus Clientes', path: '/admin/clientes' },
   { icon: SettingsIcon, name: 'Desbloqueio', path: '/admin/desbloqueio' },
-  { icon: UserGroupIcon, name: 'CRM', path: '/admin/crm' },
+  {
+    icon: UserGroupIcon,
+    name: 'CRM',
+    subItems: [
+      { name: 'Atendimento', path: '/admin/crm', pro: false },
+      { name: 'Oportunidades', path: '/admin/crm/oportunidades', pro: false },
+    ],
+  },
   { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato', requiresProfile: [1, 6] },
   { icon: PieChartIcon, name: 'Vendas / Comissão', path: '/admin/vendas/comissao', requiresProfile: [1, 6] },
   { icon: PageIcon, name: 'Tickets', path: '/admin/tickets' },

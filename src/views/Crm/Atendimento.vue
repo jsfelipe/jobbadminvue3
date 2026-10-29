@@ -25,7 +25,7 @@
             Relatórios
           </router-link>
           <router-link
-            v-if="isAdmin"
+            v-if="podePesquisas"
             to="/admin/crm/pesquisas"
             class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
             title="Pesquisas CRM"
@@ -620,11 +620,17 @@ import {
 } from './model/crm.ui'
 
 const store = useStore()
-const isAdmin = computed(() => {
+const isAdmin = computed(() => perfilAtual() === 1)
+const podePesquisas = computed(() => {
+  const id = perfilAtual()
+  return id === 1 || id === 6
+})
+
+const perfilAtual = (): number => {
   const data = store.state.Login?.data as { id_perfil?: number | string; id_usuario_tipo?: number | string } | undefined
   const id = data?.id_perfil ?? data?.id_usuario_tipo
-  return Number(id) === 1
-})
+  return Number(id)
+}
 
 const filasResp = ref<CrmFilasResponse | null>(null)
 const filasCarregadas = ref<Partial<Record<TipoFila, boolean>>>({})
