@@ -18,6 +18,9 @@
           </h2>
         </div>
         <div v-if="op" class="flex flex-wrap items-center gap-1">
+          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Editar contato" aria-label="Editar contato" @click="abrirEdicao">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+          </button>
           <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Anotação" aria-label="Anotação" @click="abrirAcao('nota')">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75H7.5A1.5 1.5 0 0 0 6 5.25v13.5A1.5 1.5 0 0 0 7.5 20.25h9a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5Z" /><path stroke-linecap="round" d="M9 8.25h6M9 12h6M9 15.75h3.5" /></svg>
           </button>
@@ -198,6 +201,17 @@
         @enviado="aoWhatsapp"
       />
 
+      <ModalOportunidade
+        v-if="editando && op"
+        :oportunidade="op"
+        :funis="funis"
+        :id-funil="op.id_funil"
+        :usuarios="usuarios"
+        :meta="meta"
+        @close="editando = false"
+        @salvo="aoSalvarEdicao"
+      />
+
       <Modal v-if="notaExcluir" full-screen-backdrop @close="notaExcluir = null">
         <template #body>
           <div class="relative z-10 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
@@ -240,6 +254,7 @@ import { useRoute } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import Modal from '@/components/ui/Modal.vue'
 import { crmService } from '@/services/crm'
+import ModalOportunidade from './components/ModalOportunidade.vue'
 import ModalWhatsapp from './components/ModalWhatsapp.vue'
 import {
   badgeTipoJobb,
@@ -249,15 +264,20 @@ import {
   type OportunidadePainel,
   type OportunidadeEvento,
   type ClienteVinculo,
+  type Funil,
   type FunilEtapa,
   type Oportunidade,
   type OportunidadeMeta,
   type OportunidadePayload,
+  type UsuarioAdmin,
 } from './model/oportunidade.types'
 
 const route = useRoute()
 const op = ref<Oportunidade | null>(null)
 const etapas = ref<FunilEtapa[]>([])
+const funis = ref<Funil[]>([])
+const usuarios = ref<UsuarioAdmin[]>([])
+const editando = ref(false)
 const meta = ref<OportunidadeMeta>({ motivos_perda: {}, tags: {}, qtd_funcionarios: [] })
 const painel = ref<OportunidadePainel>({
   vinculado: false,
@@ -550,6 +570,42 @@ const confirmarPerda = () => {
   const id = etapaPerda.value.id
   etapaPerda.value = null
   void salvarEtapa(id, motivoPerda.value)
+}
+
+const abrirEdicao = async () => {
+  erro.value = ''
+  try {
+    if (!funis.value.length || !usuarios.value.length) {
+      const [listaFunis, listaUsuarios] = await Promise.all([
+        crmService.funisListar(),
+        crmService.usuariosAdmin(),
+      ])
+      if (!Array.isArray(listaFunis) || !Array.isArray(listaUsuarios)) {
+        erro.value = 'Não foi possível abrir a edição.'
+        return
+      }
+      funis.value = listaFunis
+      usuarios.value = listaUsuarios
+    }
+    editando.value = true
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível abrir a edição.')
+  }
+}
+
+const aoSalvarEdicao = async () => {
+  editando.value = false
+  if (!op.value) return
+  try {
+    const detalhe = await crmService.oportunidadeObter(op.value.id)
+    if (detalhe && detalhe.oportunidade) {
+      op.value = detalhe.oportunidade
+      etapas.value = Array.isArray(detalhe.etapas) ? detalhe.etapas : etapas.value
+      cliente.value = detalhe.cliente && detalhe.cliente.id_cliente ? detalhe.cliente : null
+    }
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível atualizar a oportunidade.')
+  }
 }
 
 const salvarEtapa = async (idEtapa: number, motivo: string | null) => {
