@@ -230,7 +230,6 @@
         v-if="whatsappAlvo"
         :oportunidade="whatsappAlvo"
         @close="whatsappAlvo = null"
-        @enviado="whatsappAlvo = null"
       />
 
       <Modal v-if="perdaPendente" full-screen-backdrop @close="cancelarPerda">

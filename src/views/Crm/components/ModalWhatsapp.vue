@@ -20,7 +20,8 @@
           placeholder="Mensagem"
           class="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
         />
-        <p v-if="erro" class="mt-2 text-xs text-red-600">{{ erro }}</p>
+        <p v-if="erro" class="mt-2 text-sm text-red-600">{{ erro }}</p>
+        <p v-if="sucesso" class="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{{ sucesso }}</p>
         <div class="mt-4 flex justify-end gap-2">
           <button type="button" class="rounded-lg border px-4 py-2 text-sm" @click="emit('close')">Cancelar</button>
           <button type="button" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" :disabled="enviando" @click="enviar">
@@ -58,6 +59,7 @@ const idLinha = ref('')
 const idModelo = ref<number | ''>('')
 const texto = ref('')
 const erro = ref('')
+const sucesso = ref('')
 const enviando = ref(false)
 
 const linhaAtual = computed(() => linhas.value.find((linha) => linha.id === idLinha.value) || linhas.value[0] || null)
@@ -105,8 +107,16 @@ const enviar = async () => {
   }
   enviando.value = true
   erro.value = ''
+  sucesso.value = ''
   try {
     const evento = await crmService.oportunidadeWhatsapp(props.oportunidade.id, mensagem, idLinha.value || linhas.value[0]?.id || '')
+    if (!evento || !evento.id) {
+      erro.value = mensagemApi(evento, 'Não foi possível enviar.')
+      return
+    }
+    texto.value = ''
+    idModelo.value = ''
+    sucesso.value = 'Mensagem enviada.'
     emit('enviado', evento)
   } catch (err) {
     erro.value = mensagemApi(err, 'Não foi possível enviar.')

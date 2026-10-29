@@ -456,7 +456,6 @@ const incluirEvento = (evento: OportunidadeEvento) => {
 
 const aoWhatsapp = (evento: OportunidadeEvento) => {
   if (evento && evento.id) incluirEvento(evento)
-  acao.value = null
 }
 
 const idNotaLocal = (item: OportunidadeEvento): number | null => {
