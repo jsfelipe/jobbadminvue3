@@ -125,8 +125,17 @@
                 <p v-if="element.telefone" class="truncate text-xs text-gray-500">{{ element.telefone }}</p>
                 <div class="mt-2 flex items-center justify-between gap-2">
                   <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ brl(element.valor) }}</span>
-                  <span v-if="element.tag" class="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700">
-                    {{ meta.tags[element.tag] || element.tag }}
+                  <span class="flex items-center gap-1">
+                    <span
+                      v-if="badgeTipoJobb(element.tipo_jobb)"
+                      class="rounded px-1.5 py-0.5 text-[11px] font-semibold"
+                      :class="badgeTipoJobb(element.tipo_jobb)?.classe"
+                    >
+                      {{ badgeTipoJobb(element.tipo_jobb)?.label }}
+                    </span>
+                    <span v-if="element.tag" class="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700">
+                      {{ meta.tags[element.tag] || element.tag }}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -157,7 +166,18 @@
               class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40"
               @click="abrirCard(item)"
             >
-              <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ item.nome }}</td>
+              <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">
+                <span class="inline-flex items-center gap-2">
+                  {{ item.nome }}
+                  <span
+                    v-if="badgeTipoJobb(item.tipo_jobb)"
+                    class="rounded px-1.5 py-0.5 text-[11px] font-semibold"
+                    :class="badgeTipoJobb(item.tipo_jobb)?.classe"
+                  >
+                    {{ badgeTipoJobb(item.tipo_jobb)?.label }}
+                  </span>
+                </span>
+              </td>
               <td class="px-3 py-2">{{ item.contato || '—' }}</td>
               <td class="px-3 py-2">{{ item.email || '—' }}</td>
               <td class="px-3 py-2">
@@ -246,6 +266,7 @@ import { crmService } from '@/services/crm'
 import ModalOportunidade from './components/ModalOportunidade.vue'
 import ModalWhatsapp from './components/ModalWhatsapp.vue'
 import {
+  badgeTipoJobb,
   brl,
   mensagemApi,
   type Funil,

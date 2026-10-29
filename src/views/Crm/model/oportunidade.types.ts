@@ -67,6 +67,7 @@ export interface Oportunidade {
   interesse: string | null
   codigo_promocao: string | null
   tag: string | null
+  tipo_jobb?: string | null
   descricao: string | null
   valor: number
   motivo_perda: string | null
@@ -153,6 +154,17 @@ export interface MensagemModeloPayload {
 export interface MensagemModeloGestao {
   temas: Record<string, string>
   modelos: MensagemModelo[]
+}
+
+export const badgeTipoJobb = (tipo: string | null | undefined): { label: 'Video' | 'Live'; classe: string } | null => {
+  const valor = (tipo || '').toUpperCase()
+  if (valor === 'JOBBLIVE' || valor === 'JLIVE' || valor === 'JLIVE3') {
+    return { label: 'Live', classe: 'bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300' }
+  }
+  if (valor === 'V' || valor === 'J03' || valor === 'J04' || valor === '40' || valor === '30') {
+    return { label: 'Video', classe: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' }
+  }
+  return null
 }
 
 export const TEMA_MENSAGEM: Record<MensagemModelo['tema'], string> = {

@@ -6,8 +6,15 @@
           <router-link to="/admin/crm/oportunidades" class="text-sm font-semibold text-blue-600 hover:underline">
             Oportunidades
           </router-link>
-          <h2 class="truncate text-xl font-semibold text-gray-900 dark:text-white">
-            {{ op?.nome || 'Oportunidade' }}
+          <h2 class="flex min-w-0 items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+            <span class="truncate">{{ op?.nome || 'Oportunidade' }}</span>
+            <span
+              v-if="op && badgeTipoJobb(op.tipo_jobb)"
+              class="shrink-0 rounded px-2 py-0.5 text-xs font-semibold"
+              :class="badgeTipoJobb(op.tipo_jobb)?.classe"
+            >
+              {{ badgeTipoJobb(op.tipo_jobb)?.label }}
+            </span>
           </h2>
         </div>
         <div v-if="op" class="flex flex-wrap items-center gap-1">
@@ -235,6 +242,7 @@ import Modal from '@/components/ui/Modal.vue'
 import { crmService } from '@/services/crm'
 import ModalWhatsapp from './components/ModalWhatsapp.vue'
 import {
+  badgeTipoJobb,
   brl,
   mensagemApi,
   QTD_FUNC_LABEL,
