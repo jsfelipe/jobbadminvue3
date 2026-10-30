@@ -101,6 +101,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/crm/tarefas',
+      name: 'admin.crm.tarefas',
+      component: () => import('../views/Crm/Tarefas.vue'),
+      meta: {
+        title: 'Tarefas',
+      },
+    },
+    {
       path: '/admin/crm/oportunidades/funis',
       redirect: '/admin/crm/oportunidades/configuracoes',
     },

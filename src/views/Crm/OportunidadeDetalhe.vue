@@ -24,7 +24,7 @@
           <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Anotação" aria-label="Anotação" @click="abrirAcao('nota')">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75H7.5A1.5 1.5 0 0 0 6 5.25v13.5A1.5 1.5 0 0 0 7.5 20.25h9a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5Z" /><path stroke-linecap="round" d="M9 8.25h6M9 12h6M9 15.75h3.5" /></svg>
           </button>
-          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Tarefa" aria-label="Tarefa" @click="abrirAcao('tarefa')">
+          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Tarefa" aria-label="Tarefa" @click="painelTarefa = true">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11.25 11.25 13.5 15.75 8.25M6.75 4.5h10.5A1.5 1.5 0 0 1 18.75 6v12a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5V6a1.5 1.5 0 0 1 1.5-1.5Z" /></svg>
           </button>
           <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950" title="WhatsApp" aria-label="WhatsApp" @click="abrirAcao('whatsapp')">
@@ -159,40 +159,35 @@
         </aside>
       </div>
 
-      <Modal v-if="acao && acao !== 'whatsapp'" full-screen-backdrop @close="fecharAcao">
+      <Modal v-if="acao === 'nota'" full-screen-backdrop @close="fecharAcao">
         <template #body>
           <div class="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ tituloAcao }}</h3>
-            <p v-if="acao === 'whatsapp'" class="mt-1 text-sm text-gray-500">Para {{ op?.telefone || 'o telefone do cliente' }}</p>
-            <input
-              v-if="acao === 'tarefa'"
-              v-model="tituloTarefa"
-              type="text"
-              placeholder="Nome da tarefa"
-              class="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-            <input
-              v-if="acao === 'tarefa'"
-              v-model="prazoTarefa"
-              type="datetime-local"
-              class="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
             <textarea
               v-model="textoAcao"
               rows="5"
-              :placeholder="acao === 'whatsapp' ? 'Mensagem' : acao === 'tarefa' ? 'Observação' : 'Anotação'"
+              placeholder="Anotação"
               class="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
             <p v-if="erroAcao" class="mt-2 text-xs text-red-600">{{ erroAcao }}</p>
             <div class="mt-4 flex justify-end gap-2">
               <button type="button" class="rounded-lg border px-4 py-2 text-sm" @click="fecharAcao">Cancelar</button>
               <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" :disabled="salvandoAcao" @click="confirmarAcao">
-                {{ acao === 'whatsapp' ? 'Enviar' : 'Salvar' }}
+                Salvar
               </button>
             </div>
           </div>
         </template>
       </Modal>
+
+      <PainelTarefa
+        v-if="painelTarefa && op"
+        :oportunidade="{ id: op.id, nome: op.nome, id_cliente: op.id_cliente, contato: op.contato, email: op.email }"
+        :cliente-nome="cliente?.nome || null"
+        :tarefa="null"
+        @close="painelTarefa = false"
+        @salva="recarregarPainel"
+      />
 
       <ModalWhatsapp
         v-if="acao === 'whatsapp' && op"
@@ -256,6 +251,7 @@ import Modal from '@/components/ui/Modal.vue'
 import { crmService } from '@/services/crm'
 import ModalOportunidade from './components/ModalOportunidade.vue'
 import ModalWhatsapp from './components/ModalWhatsapp.vue'
+import PainelTarefa from './components/PainelTarefa.vue'
 import {
   badgeTipoJobb,
   brl,
@@ -295,18 +291,16 @@ const erro = ref('')
 const etapaPerda = ref<FunilEtapa | null>(null)
 const motivoPerda = ref('')
 const erroPerda = ref('')
-const acao = ref<'nota' | 'tarefa' | 'whatsapp' | null>(null)
+const acao = ref<'nota' | 'whatsapp' | null>(null)
+const painelTarefa = ref(false)
 const notaEditando = ref<OportunidadeEvento | null>(null)
 const notaExcluir = ref<OportunidadeEvento | null>(null)
 const erroExcluir = ref('')
 const textoAcao = ref('')
-const tituloTarefa = ref('')
-const prazoTarefa = ref('')
 const erroAcao = ref('')
 const salvandoAcao = ref(false)
 
 const tituloAcao = computed(() => {
-  if (acao.value === 'tarefa') return 'Tarefa'
   if (acao.value === 'whatsapp') return 'WhatsApp'
   if (notaEditando.value) return 'Editar anotação'
   return 'Anotação'
@@ -464,12 +458,10 @@ const idNotaLocal = (item: OportunidadeEvento): number | null => {
   return id > 0 ? id : null
 }
 
-const abrirAcao = (tipo: 'nota' | 'tarefa' | 'whatsapp') => {
+const abrirAcao = (tipo: 'nota' | 'whatsapp') => {
   notaEditando.value = null
   acao.value = tipo
   textoAcao.value = ''
-  tituloTarefa.value = ''
-  prazoTarefa.value = ''
   erroAcao.value = ''
 }
 
@@ -497,8 +489,6 @@ const confirmarAcao = async () => {
       evento = idNota
         ? await crmService.oportunidadeNotaAtualizar(op.value.id, idNota, textoAcao.value)
         : await crmService.oportunidadeNota(op.value.id, textoAcao.value)
-    } else if (acao.value === 'tarefa') {
-      evento = await crmService.oportunidadeTarefa(op.value.id, tituloTarefa.value, textoAcao.value, prazoTarefa.value)
     } else {
       return
     }
@@ -527,6 +517,16 @@ const confirmarExcluirNota = async () => {
     erroExcluir.value = mensagemApi(err, 'Não foi possível excluir.')
   } finally {
     salvandoAcao.value = false
+  }
+}
+
+const recarregarPainel = async () => {
+  if (!op.value) return
+  try {
+    const resposta = await crmService.oportunidadePainel(op.value.id)
+    if (resposta && Array.isArray(resposta.timeline)) painel.value = resposta
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível ler o histórico.')
   }
 }
 

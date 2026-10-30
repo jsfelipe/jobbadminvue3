@@ -134,6 +134,7 @@ function mapApiItemsToMenuGroups(apiItems: SidebarMenuItemApi[]): MenuGroup[] {
     subItems: [
       { name: 'Atendimento', path: '/admin/crm', pro: false },
       { name: 'Oportunidades', path: '/admin/crm/oportunidades', pro: false },
+      { name: 'Tarefas', path: '/admin/crm/tarefas', pro: false },
     ],
   }
   const desbloqueioIdx = items.findIndex(
@@ -158,6 +159,7 @@ const defaultMenuItems: MenuItemWithIcon[] = [
     subItems: [
       { name: 'Atendimento', path: '/admin/crm', pro: false },
       { name: 'Oportunidades', path: '/admin/crm/oportunidades', pro: false },
+      { name: 'Tarefas', path: '/admin/crm/tarefas', pro: false },
     ],
   },
   { icon: PieChartIcon, name: 'Extrato Mensal', path: '/admin/extrato', requiresProfile: [1, 6] },
