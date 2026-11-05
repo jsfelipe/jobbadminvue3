@@ -17,6 +17,10 @@ export const crmTarefaService = {
     const { data } = await api.get<TarefaLista>('/crm/tarefas', { params })
     return data
   },
+  async obter(id: number): Promise<Tarefa> {
+    const { data } = await api.get<Tarefa>(`/crm/tarefas/${id}`)
+    return data
+  },
   async criar(payload: TarefaPayload): Promise<Tarefa> {
     const { data } = await api.post<Tarefa>('/crm/tarefas', payload)
     return data

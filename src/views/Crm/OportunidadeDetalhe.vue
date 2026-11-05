@@ -24,7 +24,7 @@
           <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Anotação" aria-label="Anotação" @click="abrirAcao('nota')">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75H7.5A1.5 1.5 0 0 0 6 5.25v13.5A1.5 1.5 0 0 0 7.5 20.25h9a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5Z" /><path stroke-linecap="round" d="M9 8.25h6M9 12h6M9 15.75h3.5" /></svg>
           </button>
-          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Tarefa" aria-label="Tarefa" @click="painelTarefa = true">
+          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="Tarefa" aria-label="Tarefa" @click="abrirNovaTarefa">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11.25 11.25 13.5 15.75 8.25M6.75 4.5h10.5A1.5 1.5 0 0 1 18.75 6v12a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5V6a1.5 1.5 0 0 1 1.5-1.5Z" /></svg>
           </button>
           <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950" title="WhatsApp" aria-label="WhatsApp" @click="abrirAcao('whatsapp')">
@@ -87,11 +87,35 @@
             <ul v-else class="mt-3 space-y-3">
               <li v-for="item in painel.proximas" :key="item.id" class="rounded-lg border border-gray-100 px-3 py-2 dark:border-gray-700">
                 <div class="flex items-start justify-between gap-3">
-                  <div>
+                  <div class="min-w-0">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.titulo }}</p>
                     <p class="text-xs text-gray-500">{{ formatarData(item.prazo || item.quando) }}</p>
                   </div>
-                  <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-200">Aberto</span>
+                  <div class="flex shrink-0 items-center gap-1">
+                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-200">Aberto</span>
+                    <button
+                      v-if="idTarefa(item)"
+                      type="button"
+                      class="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                      title="Editar"
+                      aria-label="Editar tarefa"
+                      :disabled="alterandoTarefaId === idTarefa(item)"
+                      @click="editarTarefa(item)"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 0 1 2.97 2.97L8.25 19.04 3.75 20.25l1.21-4.5 11.902-11.263Z" /></svg>
+                    </button>
+                    <button
+                      v-if="idTarefa(item)"
+                      type="button"
+                      class="inline-flex h-7 items-center rounded-md px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-40 dark:text-violet-300 dark:hover:bg-violet-950"
+                      title="Concluir"
+                      aria-label="Concluir tarefa"
+                      :disabled="alterandoTarefaId === idTarefa(item)"
+                      @click="concluirTarefa(item)"
+                    >
+                      Concluir
+                    </button>
+                  </div>
                 </div>
                 <p v-if="item.texto" class="mt-2 whitespace-pre-line text-sm text-gray-700 dark:text-gray-200">{{ item.texto }}</p>
               </li>
@@ -101,9 +125,9 @@
           <article class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Histórico recente</h3>
             <p v-if="painel.erro" class="mt-3 text-sm text-red-600">{{ painel.erro }}</p>
-            <p v-else-if="!carregandoPainel && !painel.timeline.length" class="mt-3 text-sm text-gray-500">Nenhum histórico.</p>
+            <p v-else-if="!carregandoPainel && !timelineExibir.length" class="mt-3 text-sm text-gray-500">Nenhum histórico.</p>
             <ol v-else class="mt-4 space-y-4 border-l border-gray-200 pl-4 dark:border-gray-600">
-              <li v-for="item in painel.timeline" :key="item.id" class="relative">
+              <li v-for="item in timelineExibir" :key="item.id" class="relative">
                 <span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-blue-600" />
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0">
@@ -184,8 +208,8 @@
         v-if="painelTarefa && op"
         :oportunidade="{ id: op.id, nome: op.nome, id_cliente: op.id_cliente, contato: op.contato, email: op.email }"
         :cliente-nome="cliente?.nome || null"
-        :tarefa="null"
-        @close="painelTarefa = false"
+        :tarefa="tarefaEditando"
+        @close="fecharPainelTarefa"
         @salva="recarregarPainel"
       />
 
@@ -249,6 +273,7 @@ import { useRoute } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import Modal from '@/components/ui/Modal.vue'
 import { crmService } from '@/services/crm'
+import { crmTarefaService } from '@/services/crmTarefa'
 import ModalOportunidade from './components/ModalOportunidade.vue'
 import ModalWhatsapp from './components/ModalWhatsapp.vue'
 import PainelTarefa from './components/PainelTarefa.vue'
@@ -267,6 +292,7 @@ import {
   type OportunidadePayload,
   type UsuarioAdmin,
 } from './model/oportunidade.types'
+import type { Tarefa } from './model/tarefa.types'
 
 const route = useRoute()
 const op = ref<Oportunidade | null>(null)
@@ -293,6 +319,8 @@ const motivoPerda = ref('')
 const erroPerda = ref('')
 const acao = ref<'nota' | 'whatsapp' | null>(null)
 const painelTarefa = ref(false)
+const tarefaEditando = ref<Tarefa | null>(null)
+const alterandoTarefaId = ref<number | null>(null)
 const notaEditando = ref<OportunidadeEvento | null>(null)
 const notaExcluir = ref<OportunidadeEvento | null>(null)
 const erroExcluir = ref('')
@@ -304,6 +332,63 @@ const tituloAcao = computed(() => {
   if (acao.value === 'whatsapp') return 'WhatsApp'
   if (notaEditando.value) return 'Editar anotação'
   return 'Anotação'
+})
+
+const dois = (n: number) => String(n).padStart(2, '0')
+
+const parseNotasDatadas = (texto: string): { quando: string; texto: string }[] => {
+  const bruto = texto.replace(/\r\n/g, '\n').trim()
+  if (!bruto) return []
+  const re = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?>\s*/g
+  const marcas: { index: number; len: number; dia: number; mes: number; ano: number }[] = []
+  let match: RegExpExecArray | null = re.exec(bruto)
+  while (match) {
+    const at = match.index
+    if (at === 0 || bruto[at - 1] === '\n') {
+      let ano = match[3] ? Number(match[3]) : new Date().getFullYear()
+      if (match[3] && match[3].length === 2) {
+        ano += ano >= 70 ? 1900 : 2000
+      }
+      const dia = Number(match[1])
+      const mes = Number(match[2])
+      if (dia >= 1 && dia <= 31 && mes >= 1 && mes <= 12 && ano > 0) {
+        marcas.push({ index: at, len: match[0].length, dia, mes, ano })
+      }
+    }
+    match = re.exec(bruto)
+  }
+  if (!marcas.length) return []
+  return marcas.map((marca, index) => {
+    const inicio = marca.index + marca.len
+    const fim = index + 1 < marcas.length ? marcas[index + 1].index : bruto.length
+    return {
+      quando: `${marca.ano}-${dois(marca.mes)}-${dois(marca.dia)} 00:00:00`,
+      texto: bruto.slice(inicio, fim).trim(),
+    }
+  }).filter((parte) => parte.texto !== '')
+}
+
+const timelineExibir = computed(() => {
+  const lista: OportunidadeEvento[] = []
+  for (const item of painel.value.timeline) {
+    if (item.tipo === 'tarefa' && item.texto) {
+      const partes = parseNotasDatadas(item.texto)
+      if (partes.length) {
+        partes.forEach((parte, index) => {
+          lista.push({
+            ...item,
+            id: `${item.id}-nota-${index}-${parte.quando}`,
+            quando: parte.quando,
+            texto: parte.texto,
+            prazo: parte.quando,
+          })
+        })
+        continue
+      }
+    }
+    lista.push(item)
+  }
+  return lista.sort((a, b) => String(b.quando).localeCompare(String(a.quando)))
 })
 
 const indiceEtapa = computed(() => {
@@ -375,6 +460,13 @@ const formatarData = (valor: string): string => {
   if (!valor) return ''
   const data = new Date(valor.includes('T') ? valor : valor.replace(' ', 'T'))
   if (Number.isNaN(data.getTime())) return valor
+  if (!/\d{2}:\d{2}/.test(valor) || /[ T]00:00(?::00)?$/.test(valor)) {
+    return data.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
   return data.toLocaleString('pt-BR', {
     day: '2-digit',
     month: 'short',
@@ -456,6 +548,52 @@ const idNotaLocal = (item: OportunidadeEvento): number | null => {
   if (item.tipo !== 'nota' || !item.id.startsWith('local-')) return null
   const id = Number(item.id.slice(6))
   return id > 0 ? id : null
+}
+
+const idTarefa = (item: OportunidadeEvento): number | null => {
+  if (item.tipo !== 'tarefa' || !item.id.startsWith('tarefa-')) return null
+  const id = Number(item.id.slice(7))
+  return id > 0 ? id : null
+}
+
+const abrirNovaTarefa = () => {
+  tarefaEditando.value = null
+  painelTarefa.value = true
+}
+
+const fecharPainelTarefa = () => {
+  painelTarefa.value = false
+  tarefaEditando.value = null
+}
+
+const editarTarefa = async (item: OportunidadeEvento) => {
+  const id = idTarefa(item)
+  if (!id) return
+  alterandoTarefaId.value = id
+  erro.value = ''
+  try {
+    tarefaEditando.value = await crmTarefaService.obter(id)
+    painelTarefa.value = true
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível abrir a tarefa.')
+  } finally {
+    alterandoTarefaId.value = null
+  }
+}
+
+const concluirTarefa = async (item: OportunidadeEvento) => {
+  const id = idTarefa(item)
+  if (!id) return
+  alterandoTarefaId.value = id
+  erro.value = ''
+  try {
+    await crmTarefaService.atualizar(id, { feito: true })
+    await recarregarPainel()
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível concluir a tarefa.')
+  } finally {
+    alterandoTarefaId.value = null
+  }
 }
 
 const abrirAcao = (tipo: 'nota' | 'whatsapp') => {

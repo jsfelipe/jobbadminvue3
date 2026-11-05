@@ -113,6 +113,10 @@
         </div>
         <p class="-mt-2 text-xs text-gray-500">{{ prioridade ? 'Alta prioridade' : 'Definir como alta prioridade' }}</p>
         <label class="block text-sm">
+          <span class="font-medium text-gray-700 dark:text-gray-200">Data da anotação</span>
+          <input v-model="dataNota" type="date" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" />
+        </label>
+        <label class="block text-sm">
           <span class="font-medium text-gray-700 dark:text-gray-200">Notas</span>
           <textarea v-model="notas" rows="6" placeholder="Faça anotações aqui..." class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" />
         </label>
@@ -157,6 +161,7 @@ const tipos = ref<TarefaTipo[]>([])
 const idTipo = ref(0)
 const nome = ref('')
 const notas = ref('')
+const dataNota = ref('')
 const data = ref('')
 const hora = ref('09:00')
 const lembrete = ref(false)
@@ -192,6 +197,40 @@ const partir = (valor: string | null) => {
 }
 
 const juntar = (dia: string, tempo: string) => (dia ? `${dia}T${tempo || '09:00'}` : '')
+
+const formatarPrefixoNota = (iso: string): string => {
+  const partes = iso.split('-')
+  if (partes.length !== 3) return ''
+  const ano = partes[0]
+  const mes = Number(partes[1])
+  const dia = Number(partes[2])
+  if (!ano || !mes || !dia) return ''
+  return `${dia}/${mes}/${ano.slice(-2)}`
+}
+
+const extrairNota = (texto: string): { data: string; corpo: string } => {
+  const bruto = texto.trim()
+  const match = bruto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})>\s?([\s\S]*)$/)
+  if (!match) return { data: hoje(), corpo: bruto }
+  const dia = Number(match[1])
+  const mes = Number(match[2])
+  let ano = Number(match[3])
+  if (match[3].length === 2) ano += ano >= 70 ? 1900 : 2000
+  if (!dia || !mes || !ano) return { data: hoje(), corpo: bruto }
+  return {
+    data: `${ano}-${dois(mes)}-${dois(dia)}`,
+    corpo: (match[4] || '').trimStart(),
+  }
+}
+
+const montarNotas = (): string | null => {
+  const corpo = notas.value.trim()
+  if (!corpo) return null
+  const prefixo = formatarPrefixoNota(dataNota.value || hoje())
+  if (!prefixo) return corpo
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}>/.test(corpo)) return corpo
+  return `${prefixo}> ${corpo}`
+}
 
 let timerOportunidade = 0
 let timerCliente = 0
@@ -295,7 +334,7 @@ const salvar = async () => {
   const payload: TarefaPayload = {
     id_tipo: idTipo.value,
     nome: nome.value.trim(),
-    notas: notas.value.trim() || null,
+    notas: montarNotas(),
     vencimento: juntar(data.value, hora.value),
     lembrete_em: lembrete.value ? juntar(dataLembrete.value || data.value, horaLembrete.value || hora.value) : null,
     prioridade: prioridade.value,
@@ -321,11 +360,14 @@ const salvar = async () => {
 
 onMounted(async () => {
   data.value = hoje()
+  dataNota.value = hoje()
   if (props.tarefa) {
     const atual = props.tarefa
     idTipo.value = atual.id_tipo
     nome.value = atual.nome
-    notas.value = atual.notas
+    const nota = extrairNota(atual.notas || '')
+    dataNota.value = nota.data
+    notas.value = nota.corpo
     const venc = partir(atual.vencimento)
     data.value = venc.data || hoje()
     hora.value = venc.hora
