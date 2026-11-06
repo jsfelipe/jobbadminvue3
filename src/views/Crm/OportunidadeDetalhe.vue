@@ -142,6 +142,17 @@
                       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12M9.75 7.5V6h4.5v1.5M8.25 7.5l.75 12h6l.75-12" /></svg>
                     </button>
                   </div>
+                  <button
+                    v-else-if="podeReabrirTarefa(item)"
+                    type="button"
+                    class="inline-flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-40 dark:text-violet-300 dark:hover:bg-violet-950"
+                    title="Reabrir"
+                    aria-label="Reabrir tarefa"
+                    :disabled="alterandoTarefaId === idTarefa(item)"
+                    @click="reabrirTarefa(item)"
+                  >
+                    Reabrir
+                  </button>
                 </div>
                 <p v-if="item.texto" class="mt-1 whitespace-pre-line text-sm text-gray-700 dark:text-gray-200">{{ item.texto }}</p>
                 <p class="mt-1 text-xs text-gray-500">
@@ -551,10 +562,19 @@ const idNotaLocal = (item: OportunidadeEvento): number | null => {
 }
 
 const idTarefa = (item: OportunidadeEvento): number | null => {
-  if (item.tipo !== 'tarefa' || !item.id.startsWith('tarefa-')) return null
-  const id = Number(item.id.slice(7))
+  if (item.tipo !== 'tarefa') return null
+  const match = /^tarefa-(\d+)/.exec(item.id)
+  if (!match) return null
+  const id = Number(match[1])
   return id > 0 ? id : null
 }
+
+const idItemReabrir = computed(() => {
+  const item = timelineExibir.value.find((row) => row.feito && idTarefa(row))
+  return item ? item.id : null
+})
+
+const podeReabrirTarefa = (item: OportunidadeEvento): boolean => item.id === idItemReabrir.value
 
 const abrirNovaTarefa = () => {
   tarefaEditando.value = null
@@ -576,6 +596,23 @@ const editarTarefa = async (item: OportunidadeEvento) => {
     painelTarefa.value = true
   } catch (err) {
     erro.value = mensagemApi(err, 'Não foi possível abrir a tarefa.')
+  } finally {
+    alterandoTarefaId.value = null
+  }
+}
+
+const reabrirTarefa = async (item: OportunidadeEvento) => {
+  const id = idTarefa(item)
+  if (!id) return
+  alterandoTarefaId.value = id
+  erro.value = ''
+  try {
+    await crmTarefaService.atualizar(id, { feito: false })
+    await recarregarPainel()
+    tarefaEditando.value = await crmTarefaService.obter(id)
+    painelTarefa.value = true
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível reabrir a tarefa.')
   } finally {
     alterandoTarefaId.value = null
   }

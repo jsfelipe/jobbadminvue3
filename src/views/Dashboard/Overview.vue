@@ -354,7 +354,7 @@
           </div>
         </div>
 
-        <!-- Clientes em risco de abandono (10 dias ou mais sem acesso) -->
+        <!-- Clientes em risco de abandono (sem acesso 10d–3m e vencimento atrasado > 2 meses) -->
         <div class="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -370,7 +370,7 @@
             </button>
           </div>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            Sem acesso há 10 dias ou mais. Máx. 30.
+            Sem acesso há 10 dias ou mais e vencimento atrasado há mais de 2 meses. Máx. 30.
           </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -435,7 +435,7 @@
             </button>
           </div>
           <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            tipo_cliente = C, vencimento atrasado &gt; 15 dias, último pagamento nos últimos 6 meses. Máx. 30.
+            tipo_cliente = C, vencimento atrasado &gt; 30 dias, último pagamento nos últimos 6 meses. Máx. 30.
           </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
