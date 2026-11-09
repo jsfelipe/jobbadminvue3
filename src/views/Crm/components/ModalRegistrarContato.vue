@@ -201,7 +201,7 @@ const salvar = async () => {
   if (
     status.value === 'encerrado' &&
     motivo.value === 'cancelamento' &&
-    (props.tipoFila === 'risco_abandono' || props.tipoFila === 'atraso_pagamento')
+    (props.tipoFila === 'plano_longo' || props.tipoFila === 'risco_abandono' || props.tipoFila === 'atraso_pagamento')
   ) {
     cancelarCliente = window.confirm('Deseja alterar o tipo do cliente para Cancelado?')
   }

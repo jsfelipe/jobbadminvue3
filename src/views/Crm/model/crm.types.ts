@@ -1,10 +1,11 @@
-export type TipoFila = 'risco_abandono' | 'atraso_pagamento' | 'teste_expirado'
+export type TipoFila = 'plano_longo' | 'risco_abandono' | 'atraso_pagamento' | 'teste_expirado'
 
-export const TIPOS_FILA: TipoFila[] = ['risco_abandono', 'atraso_pagamento', 'teste_expirado']
+export const TIPOS_FILA: TipoFila[] = ['atraso_pagamento', 'risco_abandono', 'plano_longo', 'teste_expirado']
 
-export const ABAS_FILA: TipoFila[] = ['atraso_pagamento', 'risco_abandono', 'teste_expirado']
+export const ABAS_FILA: TipoFila[] = ['atraso_pagamento', 'risco_abandono', 'plano_longo', 'teste_expirado']
 
 export const FILA_LABEL: Record<TipoFila, string> = {
+  plano_longo: 'A vencer (Sem./Anual)',
   risco_abandono: 'Risco de abandono',
   atraso_pagamento: 'Atraso de pagamento',
   teste_expirado: 'Cadastros > 3 meses',
@@ -23,6 +24,7 @@ export const STATUS_CASO: StatusCaso[] = ['pendente', 'aguardando_retorno', 'em_
 export const STATUS_REGISTRO: StatusRegistro[] = ['aguardando_retorno', 'em_atendimento', 'resolvido', 'encerrado']
 
 export const RESOLVIDO_LABEL: Record<TipoFila, string> = {
+  plano_longo: 'Pagou',
   risco_abandono: 'Voltou a usar',
   atraso_pagamento: 'Pagou',
   teste_expirado: 'Converteu',

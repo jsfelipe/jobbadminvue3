@@ -18,6 +18,7 @@ export const diasAte = (value: string | null | undefined): number | null => {
 }
 
 export const filaBadgeClass = (tipo: TipoFila): string => {
+  if (tipo === 'plano_longo') return 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-100'
   if (tipo === 'risco_abandono') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-100'
   if (tipo === 'atraso_pagamento') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-100'
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100'

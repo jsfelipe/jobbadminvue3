@@ -104,7 +104,7 @@
 
         <!-- Filas de contato -->
         <div v-if="abaAtiva !== 'novas_leads'" class="overflow-x-auto p-4">
-          <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <CrmCounterCard label="Feitos hoje (equipe)" :value="contadores?.hoje?.total ?? 0" value-class="text-emerald-600" />
             <CrmCounterCard label="Feitos hoje (eu)" :value="contadores?.hoje?.meus ?? 0" value-class="text-blue-600" />
             <CrmCounterCard
@@ -202,7 +202,12 @@
             <tbody>
               <tr v-for="c in listaFiltrada" :key="c.id_cliente" class="border-t border-gray-100 dark:border-gray-700">
                 <td class="font-medium text-gray-900 dark:text-white">
-                  {{ c.nome }}
+                  <router-link
+                    :to="`/admin/clientes/alterar/${c.id_cliente}`"
+                    class="text-blue-700 hover:underline dark:text-blue-300"
+                  >
+                    {{ c.nome }}
+                  </router-link>
                   <span
                     v-if="subAba === 'pendente' && c.caso?.sem_retorno"
                     class="ml-1 inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800 dark:bg-orange-900/40 dark:text-orange-100"
@@ -221,7 +226,7 @@
                   <span class="inline-flex items-center gap-1.5">
                     {{ c.dominio || '-' }}
                     <button
-                      v-if="abaAtiva === 'atraso_pagamento' || abaAtiva === 'risco_abandono'"
+                      v-if="abaAtiva === 'plano_longo' || abaAtiva === 'atraso_pagamento' || abaAtiva === 'risco_abandono'"
                       type="button"
                       class="inline-flex rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700"
                       title="Usuários da conta"
@@ -513,7 +518,12 @@
                 <td class="whitespace-nowrap">{{ formatTime(r.created_at) }}</td>
                 <td>{{ r.nome_usuario || '—' }}</td>
                 <td>
-                  <span class="font-medium">{{ r.nome_cliente || `#${r.id_cliente}` }}</span>
+                  <router-link
+                    :to="`/admin/clientes/alterar/${r.id_cliente}`"
+                    class="font-medium text-blue-700 hover:underline dark:text-blue-300"
+                  >
+                    {{ r.nome_cliente || `#${r.id_cliente}` }}
+                  </router-link>
                   <span v-if="r.dominio" class="block text-xs text-gray-500">{{ r.dominio }}</span>
                 </td>
                 <td>
