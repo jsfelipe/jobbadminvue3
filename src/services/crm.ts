@@ -28,6 +28,12 @@ import type {
   PesquisaResumo,
 } from '@/views/Crm/model/pesquisa.types'
 import type {
+  AcademiaEvento,
+  AcademiaFeedback,
+  AcademiaFiltro,
+  AcademiaResumo,
+} from '@/views/Crm/model/academia.types'
+import type {
   EtapaPayload,
   Funil,
   FunilPayload,
@@ -130,6 +136,18 @@ export const crmService = {
   },
   async pesquisaDetalhe(id: number): Promise<PesquisaResposta> {
     const { data } = await api.get<PesquisaResposta>(`/crm/pesquisas/${id}`)
+    return data
+  },
+  async academiaResumo(params: { data_inicio?: string; data_fim?: string }): Promise<AcademiaResumo> {
+    const { data } = await api.get<AcademiaResumo>('/crm/academia/resumo', { params })
+    return data
+  },
+  async academiaEventos(params: AcademiaFiltro): Promise<Paginated<AcademiaEvento>> {
+    const { data } = await api.get<Paginated<AcademiaEvento>>('/crm/academia/eventos', { params })
+    return data
+  },
+  async academiaFeedback(params: AcademiaFiltro): Promise<Paginated<AcademiaFeedback>> {
+    const { data } = await api.get<Paginated<AcademiaFeedback>>('/crm/academia/feedback', { params })
     return data
   },
   async oportunidadeMeta(): Promise<OportunidadeMeta> {

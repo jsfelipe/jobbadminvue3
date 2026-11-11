@@ -10,6 +10,12 @@
         </div>
         <div class="flex flex-wrap gap-2">
           <router-link
+            to="/admin/crm/academia"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-600 dark:text-gray-200"
+          >
+            Academia
+          </router-link>
+          <router-link
             to="/admin/crm"
             class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-gray-600 dark:text-gray-200"
           >

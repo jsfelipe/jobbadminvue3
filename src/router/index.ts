@@ -101,6 +101,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/crm/academia',
+      name: 'admin.crm.academia',
+      component: () => import('../views/Crm/Academia.vue'),
+      meta: {
+        title: 'Academia CRM',
+        requiresProfile: [1, 6],
+      },
+    },
+    {
       path: '/admin/crm/tarefas',
       name: 'admin.crm.tarefas',
       component: () => import('../views/Crm/Tarefas.vue'),
