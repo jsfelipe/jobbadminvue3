@@ -232,6 +232,9 @@ export const crmService = {
     const { data } = await api.put<Oportunidade>(`/crm/oportunidades/${id}`, payload)
     return data
   },
+  async oportunidadeExcluir(id: number): Promise<void> {
+    await api.delete(`/crm/oportunidades/${id}`)
+  },
   async oportunidadesReordenar(colunas: ReordenarColuna[], motivoPerda?: string | null): Promise<void> {
     await api.post('/crm/oportunidades/reordenar', {
       colunas,

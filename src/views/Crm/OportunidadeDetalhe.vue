@@ -36,6 +36,9 @@
           <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40 dark:text-red-400" title="Marcar perdido" aria-label="Marcar perdido" :disabled="salvando || op?.etapa?.tipo === 'perdido'" @click="marcarPerdido">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18" /></svg>
           </button>
+          <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40 dark:text-red-400" title="Excluir" aria-label="Excluir oportunidade" :disabled="salvando" @click="excluir">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+          </button>
         </div>
       </div>
 
@@ -280,7 +283,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import Modal from '@/components/ui/Modal.vue'
 import { crmService } from '@/services/crm'
@@ -306,6 +309,7 @@ import {
 import type { Tarefa } from './model/tarefa.types'
 
 const route = useRoute()
+const router = useRouter()
 const op = ref<Oportunidade | null>(null)
 const etapas = ref<FunilEtapa[]>([])
 const funis = ref<Funil[]>([])
@@ -779,6 +783,20 @@ const aoSalvarEdicao = async () => {
     }
   } catch (err) {
     erro.value = mensagemApi(err, 'Não foi possível atualizar a oportunidade.')
+  }
+}
+
+const excluir = async () => {
+  if (!op.value || salvando.value) return
+  if (!window.confirm(`Excluir a oportunidade ${op.value.nome}?`)) return
+  salvando.value = true
+  erro.value = ''
+  try {
+    await crmService.oportunidadeExcluir(op.value.id)
+    await router.push('/admin/crm/oportunidades')
+  } catch (err) {
+    erro.value = mensagemApi(err, 'Não foi possível excluir a oportunidade.')
+    salvando.value = false
   }
 }
 
