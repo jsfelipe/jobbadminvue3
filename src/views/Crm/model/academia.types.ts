@@ -6,6 +6,7 @@ export type AcademiaEventoTipo =
   | 'video_play'
   | 'video_progress'
   | 'video_ended'
+  | 'video_watch'
 
 export type AcademiaAjudou = 'sim' | 'parcial' | 'nao'
 
@@ -16,6 +17,7 @@ export interface AcademiaResumo {
   conclusoes: number
   taxa_conclusao: number
   feedbacks: number
+  tempo_assistido: number
   ajudou: Record<AcademiaAjudou, number>
   top_aulas: AcademiaTopAula[]
   top_assuntos: AcademiaTopAssunto[]
@@ -26,6 +28,7 @@ export interface AcademiaTopAula {
   lesson_title: string | null
   aberturas: number
   conclusoes: number
+  tempo_segundos: number
 }
 
 export interface AcademiaTopAssunto {
@@ -46,6 +49,7 @@ export interface AcademiaEvento {
   lesson_title: string | null
   alvo: string | null
   progresso: number | null
+  segundos: number | null
   created_at: string | null
 }
 
@@ -84,6 +88,7 @@ export const ACADEMIA_TIPO_LABEL: Record<AcademiaEventoTipo, string> = {
   video_play: 'Play',
   video_progress: 'Progresso',
   video_ended: 'Concluiu',
+  video_watch: 'Assistiu',
 }
 
 export const ACADEMIA_AJUDOU_LABEL: Record<AcademiaAjudou, string> = {

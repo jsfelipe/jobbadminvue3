@@ -93,6 +93,7 @@
           :value="`${resumo?.taxa_conclusao ?? 0}%`"
           :progress="resumo?.taxa_conclusao ?? 0"
         />
+        <CrmCounterCard label="Tempo assistido" :value="formatTempoAssistido(resumo?.tempo_assistido ?? 0)" />
         <CrmCounterCard
           label="Feedbacks"
           :value="resumo?.feedbacks ?? 0"
@@ -110,6 +111,7 @@
                 <th>Aula</th>
                 <th>Aberturas</th>
                 <th>Conclusões</th>
+                <th>Tempo</th>
               </tr>
             </thead>
             <tbody>
@@ -117,6 +119,7 @@
                 <td>{{ aula.lesson_title || aula.lesson_id }}</td>
                 <td>{{ aula.aberturas }}</td>
                 <td>{{ aula.conclusoes }}</td>
+                <td>{{ formatRelogio(aula.tempo_segundos) }}</td>
               </tr>
             </tbody>
           </table>
@@ -166,6 +169,7 @@
                 <th>Aula</th>
                 <th>Alvo</th>
                 <th>Progresso</th>
+                <th>Tempo</th>
               </tr>
             </thead>
             <tbody>
@@ -183,6 +187,7 @@
                 <td>{{ row.lesson_title || row.lesson_id || '—' }}</td>
                 <td>{{ row.alvo || '—' }}</td>
                 <td>{{ row.progresso === null ? '—' : `${row.progresso}%` }}</td>
+                <td>{{ formatRelogio(row.segundos) }}</td>
               </tr>
             </tbody>
           </table>
@@ -263,7 +268,27 @@ const tipos: AcademiaEventoTipo[] = [
   'video_play',
   'video_progress',
   'video_ended',
+  'video_watch',
 ]
+
+function formatRelogio(total: number | null | undefined): string {
+  if (total === null || total === undefined || total <= 0) return '—'
+  const seconds = Math.floor(total)
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const rest = seconds % 60
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
+  return `${minutes}:${String(rest).padStart(2, '0')}`
+}
+
+function formatTempoAssistido(total: number): string {
+  const seconds = Math.max(0, Math.floor(total))
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  if (hours > 0) return `${hours}h ${minutes}min`
+  if (minutes > 0) return `${minutes}min`
+  return `${seconds}s`
+}
 const ajudouOpcoes: AcademiaAjudou[] = ['sim', 'parcial', 'nao']
 
 const hojeIso = () => new Date().toISOString().slice(0, 10)
